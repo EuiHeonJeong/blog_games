@@ -6,17 +6,19 @@
 <title>틱택토 대전</title>
 <style>
   :root{
-    --pink:#ffb3c6;
-    --pink-dark:#ff8fab;
-    --blue:#b8d8ff;
-    --blue-dark:#8fc1ff;
-    --purple:#d9c7ff;
-    --bg:#fff7fb;
+    --pink:#ff6b57;
+    --pink-dark:#e14f32;
+    --blue:#3da5ff;
+    --blue-dark:#1c86e0;
+    --purple:#2bc48a;
+    --purple-dark:#1e9c6c;
+    --bg:#fff6e9;
     --card:#ffffff;
-    --text:#4a4458;
-    --sub:#8a8398;
-    --line:#f0e6ee;
-    --win:#a8e6b0;
+    --text:#23272f;
+    --sub:#868e96;
+    --line:#e9ecef;
+    --win:#ffd43b;
+    --win-dark:#f2b705;
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body{
@@ -37,25 +39,25 @@
   }
   header{ text-align:center; padding:6px 4px 2px; }
   header h1{ margin:0 0 4px; font-size:1.4rem; color:var(--pink-dark); }
-  header p{ margin:0; font-size:0.85rem; color:var(--sub); }
+  header p{ margin:0; font-size:0.85rem; color:var(--sub); word-break:keep-all; }
 
   .ad-slot{
     width:100%;
     min-height:50px;
-    border:1px dashed #d9cfe0;
-    border-radius:10px;
+    border:2px dashed #ced4da;
+    border-radius:8px;
     display:flex;
     align-items:center;
     justify-content:center;
     font-size:0.75rem;
-    color:#b3a9c2;
-    background:#fbf6fc;
+    color:#adb5bd;
+    background:#ffffff;
   }
 
   .card{
     background:var(--card);
-    border-radius:18px;
-    box-shadow:0 6px 16px rgba(180,150,190,0.18);
+    border:2px solid var(--line);
+    border-radius:14px;
     padding:18px;
   }
 
@@ -63,20 +65,23 @@
   .mode-btn{
     width:100%;
     padding:14px;
-    margin-bottom:10px;
+    margin-bottom:12px;
     border:none;
-    border-radius:14px;
+    border-radius:10px;
     font-size:1rem;
     font-weight:bold;
     cursor:pointer;
     background:var(--pink);
     color:#fff;
-    transition:transform .12s ease, box-shadow .12s ease;
-    box-shadow:0 4px 10px rgba(255,143,171,0.35);
+    transition:transform .08s ease, box-shadow .08s ease;
+    box-shadow:0 4px 0 var(--pink-dark);
   }
-  .mode-btn:active{ transform:scale(0.97); }
-  .mode-btn.secondary{ background:var(--blue); box-shadow:0 4px 10px rgba(143,193,255,0.35); }
+  .mode-btn:active{ transform:translateY(4px); box-shadow:0 0 0 var(--pink-dark); }
+  .mode-btn.secondary{ background:var(--blue); box-shadow:0 4px 0 var(--blue-dark); }
+  .mode-btn.secondary:active{ box-shadow:0 0 0 var(--blue-dark); }
+  .mode-btn.dimmed{ opacity:0.45; }
 
+  .size-wrap{ margin:14px 0; }
   .diff-wrap{ margin:10px 0 16px; display:none; }
   .diff-wrap.show{ display:block; }
   .diff-title{ font-size:0.85rem; color:var(--sub); margin-bottom:8px; text-align:center; }
@@ -84,7 +89,7 @@
   .diff-option{
     flex:1;
     padding:10px 4px;
-    border-radius:12px;
+    border-radius:8px;
     border:2px solid var(--line);
     background:#fff;
     font-size:0.85rem;
@@ -92,13 +97,13 @@
     cursor:pointer;
     text-align:center;
   }
-  .diff-option.selected{ border-color:var(--pink-dark); background:#fff0f4; font-weight:bold; }
+  .diff-option.selected{ border-color:var(--pink-dark); background:#fff1ee; color:var(--pink-dark); font-weight:bold; }
 
   .howto{
     margin-top:14px;
     padding:12px;
-    background:#f7f3fb;
-    border-radius:12px;
+    background:#f1f3f5;
+    border-radius:8px;
     font-size:0.8rem;
     color:var(--sub);
     line-height:1.6;
@@ -110,14 +115,16 @@
     margin-top:14px;
     padding:14px;
     border:none;
-    border-radius:14px;
+    border-radius:10px;
     font-size:1.05rem;
     font-weight:bold;
     color:#fff;
     background:var(--purple);
-    box-shadow:0 4px 10px rgba(217,199,255,0.5);
+    box-shadow:0 4px 0 var(--purple-dark);
     cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease;
   }
+  .start-btn:active{ transform:translateY(4px); box-shadow:0 0 0 var(--purple-dark); }
   .start-btn:disabled{ opacity:0.5; cursor:not-allowed; }
 
   /* 게임 플레이 화면 */
@@ -126,8 +133,8 @@
     justify-content:space-around;
     align-items:center;
     padding:10px 6px;
-    background:#f7f3fb;
-    border-radius:12px;
+    background:#f1f3f5;
+    border-radius:8px;
     margin-bottom:12px;
     font-size:0.85rem;
   }
@@ -146,19 +153,25 @@
 
   .board{
     display:grid;
-    grid-template-columns:repeat(3,1fr);
+    grid-template-columns:repeat(var(--n, 3), 1fr);
+    grid-template-rows:repeat(var(--n, 3), 1fr);
     gap:8px;
     width:100%;
     aspect-ratio:1/1;
   }
   .cell{
-    background:#fbf8fd;
+    -webkit-appearance:none;
+    appearance:none;
+    margin:0;
+    padding:0;
+    font-family:inherit;
+    background:#f1f3f5;
     border:2px solid var(--line);
-    border-radius:12px;
+    border-radius:8px;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:min(11vw,2.6rem);
+    font-size:min(calc(33vw / var(--n, 3)), 2.6rem);
     font-weight:bold;
     cursor:pointer;
     color:var(--text);
@@ -168,8 +181,10 @@
   .cell:active{ transform:scale(0.95); }
   .cell.x{ color:var(--pink-dark); }
   .cell.o{ color:var(--blue-dark); }
+  .cell:disabled{ opacity:1; cursor:default; }
   .cell.win{
     background:var(--win);
+    border-color:var(--win-dark);
     animation:pulse .6s ease-in-out infinite alternate;
   }
   @keyframes pulse{
@@ -194,18 +209,22 @@
   /* 결과 화면 */
   .result-emoji{ text-align:center; font-size:2.4rem; margin-bottom:6px; }
   .result-text{ text-align:center; font-size:1.15rem; font-weight:bold; margin-bottom:18px; }
-  .result-btns{ display:flex; flex-direction:column; gap:8px; }
+  .result-btns{ display:flex; flex-direction:column; gap:10px; }
   .result-btns button{
     padding:13px;
     border:none;
-    border-radius:14px;
+    border-radius:10px;
     font-size:0.95rem;
     font-weight:bold;
     cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease;
   }
-  .btn-replay{ background:var(--pink); color:#fff; }
-  .btn-mode{ background:var(--blue); color:#fff; }
-  .btn-quit{ background:#f0ecf5; color:var(--sub); }
+  .btn-replay{ background:var(--pink); color:#fff; box-shadow:0 4px 0 var(--pink-dark); }
+  .btn-replay:active{ transform:translateY(4px); box-shadow:0 0 0 var(--pink-dark); }
+  .btn-mode{ background:var(--blue); color:#fff; box-shadow:0 4px 0 var(--blue-dark); }
+  .btn-mode:active{ transform:translateY(4px); box-shadow:0 0 0 var(--blue-dark); }
+  .btn-quit{ background:#f1f3f5; color:var(--sub); box-shadow:0 4px 0 var(--line); }
+  .btn-quit:active{ transform:translateY(4px); box-shadow:0 0 0 var(--line); }
 
   .ended-msg{ text-align:center; font-size:0.95rem; color:var(--sub); padding:20px 0; }
 
@@ -226,6 +245,15 @@
   <section class="card" id="screen-menu">
     <button class="mode-btn" id="btn-mode-pvc" type="button">1인 플레이 (AI와 대전)</button>
     <button class="mode-btn secondary" id="btn-mode-pvp" type="button">로컬 2인 대전</button>
+
+    <div class="size-wrap">
+      <div class="diff-title">보드 크기 선택</div>
+      <div class="diff-options" id="size-options">
+        <div class="diff-option selected" data-size="3">3x3</div>
+        <div class="diff-option" data-size="4">4x4</div>
+        <div class="diff-option" data-size="5">5x5</div>
+      </div>
+    </div>
 
     <div class="diff-wrap" id="diff-wrap">
       <div class="diff-title">AI 난이도 선택</div>
@@ -280,7 +308,10 @@
       <button class="btn-mode" id="btn-back-menu" type="button">모드 다시 선택</button>
       <button class="btn-quit" id="btn-quit" type="button">그만하기</button>
     </div>
-    <div class="ended-msg hidden" id="ended-msg">플레이해주셔서 감사합니다 🙂</div>
+    <div class="ended-msg hidden" id="ended-msg">
+      플레이해주셔서 감사합니다 🙂<br>
+      <button class="link-btn" id="btn-new-game" type="button">새 게임 시작</button>
+    </div>
   </section>
 
   <div class="ad-slot" id="ad-slot-bottom">여기에 광고 영역</div>
@@ -291,15 +322,33 @@
 (function(){
 
   /* ---------- 상태 값 ---------- */
-  var WIN_LINES = [
-    [0,1,2],[3,4,5],[6,7,8], // 가로
-    [0,3,6],[1,4,7],[2,5,8], // 세로
-    [0,4,8],[2,4,6]          // 대각선
-  ];
+  // 난이도별 미니맥스 탐색 깊이 제한: 3x3은 완전 탐색, 4x4/5x5는 성능을 위해 얕은 깊이 + 휴리스틱 평가 사용
+  var DEPTH_BY_SIZE = { 3:9, 4:3, 5:2 };
+
+  // n x n 보드의 모든 승리 라인(가로/세로/대각선)을 생성
+  function buildWinLines(n){
+    var lines = [];
+    for(var r=0;r<n;r++){
+      var row = [];
+      for(var c=0;c<n;c++) row.push(r*n+c);
+      lines.push(row);
+    }
+    for(var c2=0;c2<n;c2++){
+      var col = [];
+      for(var r2=0;r2<n;r2++) col.push(r2*n+c2);
+      lines.push(col);
+    }
+    var d1=[], d2=[];
+    for(var i=0;i<n;i++){ d1.push(i*n+i); d2.push(i*n+(n-1-i)); }
+    lines.push(d1, d2);
+    return lines;
+  }
 
   var state = {
     mode: null,        // 'pvc' | 'pvp'
     difficulty: null,  // 'easy' | 'normal' | 'hard'
+    boardSize: 3,       // 3 | 4 | 5
+    winLines: buildWinLines(3),
     board: Array(9).fill(null),
     current: 'X',       // 현재 턴 마크
     scores: { X:0, O:0, draw:0 },
@@ -315,7 +364,8 @@
     btnModePvc: document.getElementById('btn-mode-pvc'),
     btnModePvp: document.getElementById('btn-mode-pvp'),
     diffWrap: document.getElementById('diff-wrap'),
-    diffOptions: document.querySelectorAll('.diff-option'),
+    diffOptions: document.querySelectorAll('#diff-wrap .diff-option'),
+    sizeOptions: document.querySelectorAll('#size-options .diff-option'),
     btnStart: document.getElementById('btn-start'),
     board: document.getElementById('board'),
     turnIndicator: document.getElementById('turn-indicator'),
@@ -331,7 +381,8 @@
     endedMsg: document.getElementById('ended-msg'),
     btnReplay: document.getElementById('btn-replay'),
     btnBackMenu: document.getElementById('btn-back-menu'),
-    btnQuit: document.getElementById('btn-quit')
+    btnQuit: document.getElementById('btn-quit'),
+    btnNewGame: document.getElementById('btn-new-game')
   };
 
   /* ---------- 화면 전환 ---------- */
@@ -342,10 +393,11 @@
   }
 
   /* ---------- 모드 선택 화면 로직 ---------- */
+  // 각 버튼은 항상 자기 고유 색을 유지하고, 선택되지 않은 쪽만 흐리게 표시해 선택 상태를 나타냄
   function selectMode(mode){
     state.mode = mode;
-    el.btnModePvc.classList.toggle('secondary', mode !== 'pvc');
-    el.btnModePvp.classList.toggle('secondary', mode !== 'pvp');
+    el.btnModePvc.classList.toggle('dimmed', mode !== 'pvc');
+    el.btnModePvp.classList.toggle('dimmed', mode !== 'pvp');
     el.diffWrap.classList.toggle('show', mode === 'pvc');
     updateStartButton();
   }
@@ -356,6 +408,13 @@
       opt.classList.toggle('selected', opt.getAttribute('data-diff') === diff);
     });
     updateStartButton();
+  }
+
+  function selectBoardSize(size){
+    state.boardSize = size;
+    el.sizeOptions.forEach(function(opt){
+      opt.classList.toggle('selected', Number(opt.getAttribute('data-size')) === size);
+    });
   }
 
   // 모드(및 1인 모드일 때 난이도)가 모두 정해져야 시작 버튼 활성화
@@ -369,6 +428,9 @@
   el.btnModePvp.addEventListener('click', function(){ selectMode('pvp'); });
   el.diffOptions.forEach(function(opt){
     opt.addEventListener('click', function(){ selectDifficulty(opt.getAttribute('data-diff')); });
+  });
+  el.sizeOptions.forEach(function(opt){
+    opt.addEventListener('click', function(){ selectBoardSize(Number(opt.getAttribute('data-size'))); });
   });
   el.btnStart.addEventListener('click', startGame);
 
@@ -388,20 +450,23 @@
   }
 
   // 점수는 유지한 채 보드만 새로 시작 (다시하기)
+  // 1인 모드에서는 매 판 선공을 랜덤으로 정해 AI가 항상 뒤에만 두지 않도록 함
   function resetRound(){
-    state.board = Array(9).fill(null);
-    state.current = 'X';
+    state.winLines = buildWinLines(state.boardSize);
+    state.board = Array(state.boardSize * state.boardSize).fill(null);
+    state.current = (state.mode === 'pvc' && Math.random() < 0.5) ? 'O' : 'X';
     state.gameOver = false;
     state.aiThinking = false;
     renderBoard();
     updateTurnIndicator();
+    maybeStartAiTurn();
   }
 
   function backToMenu(){
     state.mode = null;
     state.difficulty = null;
-    el.btnModePvc.classList.remove('secondary');
-    el.btnModePvp.classList.remove('secondary');
+    el.btnModePvc.classList.remove('dimmed');
+    el.btnModePvp.classList.remove('dimmed');
     el.diffWrap.classList.remove('show');
     el.diffOptions.forEach(function(opt){ opt.classList.remove('selected'); });
     updateStartButton();
@@ -411,13 +476,18 @@
   el.btnGiveUp.addEventListener('click', backToMenu);
 
   /* ---------- 보드 렌더링 ---------- */
+  // 버튼 요소로 렌더링해 키보드/스크린리더로도 조작 가능하게 함
   function renderBoard(){
+    el.board.style.setProperty('--n', state.boardSize);
     el.board.innerHTML = '';
     state.board.forEach(function(mark, idx){
-      var cell = document.createElement('div');
+      var cell = document.createElement('button');
+      cell.type = 'button';
       cell.className = 'cell' + (mark ? ' ' + mark.toLowerCase() : '');
       cell.textContent = mark || '';
       cell.setAttribute('data-idx', idx);
+      cell.setAttribute('aria-label', (idx + 1) + '번째 칸' + (mark ? ' (' + mark + ')' : ' (비어있음)'));
+      if(mark) cell.disabled = true;
       cell.addEventListener('click', function(){ handleCellInput(idx); });
       // 모바일 터치 입력 지원 (클릭 이벤트와 중복 실행 방지)
       cell.addEventListener('touchstart', function(e){
@@ -462,26 +532,30 @@
 
     state.current = state.current === 'X' ? 'O' : 'X';
     updateTurnIndicator();
+    maybeStartAiTurn();
+  }
 
-    // 1인 모드에서 AI 차례가 되면 약간의 딜레이 후 수를 둠 (생각하는 느낌)
-    if(state.mode === 'pvc' && state.current === 'O'){
-      state.aiThinking = true;
-      setTimeout(function(){
-        var move = getAiMove(state.board.slice(), state.difficulty);
-        state.aiThinking = false;
-        if(!state.gameOver && move !== null) placeMark(move, 'O');
-      }, 450);
-    }
+  // 1인 모드에서 AI 차례가 되면(선공으로 시작한 경우 포함) 약간의 딜레이 후 수를 둠 (생각하는 느낌)
+  function maybeStartAiTurn(){
+    if(state.mode !== 'pvc' || state.current !== 'O' || state.gameOver) return;
+    state.aiThinking = true;
+    setTimeout(function(){
+      var move = getAiMove(state.board.slice(), state.difficulty);
+      state.aiThinking = false;
+      if(!state.gameOver && move !== null) placeMark(move, 'O');
+    }, 450);
   }
 
   /* ---------- 승패 판정 ---------- */
-  // board 상태를 검사해 승자와 승리 라인, 무승부 여부를 반환
+  // board 상태를 검사해 승자와 승리 라인, 무승부 여부를 반환 (보드 크기에 따라 라인 길이가 달라짐)
   function checkResult(board){
-    for(var i=0;i<WIN_LINES.length;i++){
-      var line = WIN_LINES[i];
-      var a=board[line[0]], b=board[line[1]], c=board[line[2]];
-      if(a && a===b && a===c){
-        return { winner:a, line:line };
+    for(var i=0;i<state.winLines.length;i++){
+      var line = state.winLines[i];
+      var first = board[line[0]];
+      if(!first) continue;
+      var complete = line.every(function(idx){ return board[idx] === first; });
+      if(complete){
+        return { winner:first, line:line };
       }
     }
     if(board.every(function(v){ return v; })){
@@ -540,6 +614,9 @@
     el.endedMsg.classList.remove('hidden');
   });
 
+  // 종료 메시지 화면에서도 막다른 길이 되지 않도록 모드 선택으로 돌아가는 경로를 남겨둠
+  el.btnNewGame.addEventListener('click', backToMenu);
+
   /* ---------- AI 로직 ---------- */
   // 난이도에 따라 AI가 둘 위치(인덱스)를 결정
   function getAiMove(board, difficulty){
@@ -552,8 +629,8 @@
     if(difficulty === 'normal'){
       return Math.random() < 0.7 ? bestMove(board, 'O') : randomMove(empties);
     }
-    // 무적: 항상 미니맥스 최선의 수
-    return bestMove(board, 'O');
+    // 무적: 90% 확률로 미니맥스 최선의 수, 10% 확률로 랜덤 (100% 완벽하면 재미가 없어서 약간의 여지를 둠)
+    return Math.random() < 0.9 ? bestMove(board, 'O') : randomMove(empties);
   }
 
   function emptyIndices(board){
@@ -566,13 +643,15 @@
     return empties[Math.floor(Math.random() * empties.length)];
   }
 
-  // 미니맥스로 현재 board에서 player에게 가장 유리한 칸을 찾음
+  // 미니맥스(+알파-베타 가지치기)로 현재 board에서 player에게 가장 유리한 칸을 찾음
+  // 3x3은 깊이 제한이 없어 완전 탐색과 동일하고, 4x4/5x5는 깊이 제한 후 휴리스틱 평가로 대체해 연산량을 억제함
   function bestMove(board, player){
+    var maxDepth = DEPTH_BY_SIZE[state.boardSize] || 3;
     var bestScore = -Infinity;
     var move = null;
     emptyIndices(board).forEach(function(idx){
       board[idx] = player;
-      var score = minimax(board, 0, false, player);
+      var score = minimax(board, 1, maxDepth, -Infinity, Infinity, false, player);
       board[idx] = null;
       if(score > bestScore){
         bestScore = score;
@@ -582,33 +661,59 @@
     return move;
   }
 
-  // 미니맥스 알고리즘: 3x3 보드는 탐색량이 적어 깊이 제한 없이 완전 탐색
-  function minimax(board, depth, isMaximizing, aiPlayer){
+  function minimax(board, depth, maxDepth, alpha, beta, isMaximizing, aiPlayer){
     var opponent = aiPlayer === 'O' ? 'X' : 'O';
     var result = checkResult(board);
     if(result){
-      if(result.winner === aiPlayer) return 10 - depth;
-      if(result.winner === opponent) return depth - 10;
+      if(result.winner === aiPlayer) return 1000 - depth;
+      if(result.winner === opponent) return depth - 1000;
       return 0; // 무승부
     }
+    if(depth >= maxDepth){
+      return evaluateHeuristic(board, aiPlayer, opponent);
+    }
 
+    var empties = emptyIndices(board);
     if(isMaximizing){
       var best = -Infinity;
-      emptyIndices(board).forEach(function(idx){
+      for(var i=0;i<empties.length;i++){
+        var idx = empties[i];
         board[idx] = aiPlayer;
-        best = Math.max(best, minimax(board, depth+1, false, aiPlayer));
+        best = Math.max(best, minimax(board, depth+1, maxDepth, alpha, beta, false, aiPlayer));
         board[idx] = null;
-      });
+        alpha = Math.max(alpha, best);
+        if(beta <= alpha) break; // 가지치기
+      }
       return best;
     } else {
       var worst = Infinity;
-      emptyIndices(board).forEach(function(idx){
-        board[idx] = opponent;
-        worst = Math.min(worst, minimax(board, depth+1, true, aiPlayer));
-        board[idx] = null;
-      });
+      for(var j=0;j<empties.length;j++){
+        var idx2 = empties[j];
+        board[idx2] = opponent;
+        worst = Math.min(worst, minimax(board, depth+1, maxDepth, alpha, beta, true, aiPlayer));
+        board[idx2] = null;
+        beta = Math.min(beta, worst);
+        if(beta <= alpha) break; // 가지치기
+      }
       return worst;
     }
+  }
+
+  // 깊이 제한에 도달했을 때 판을 즉시 평가하는 휴리스틱: 상대에게 막히지 않은 라인일수록,
+  // 그 라인에 이미 놓인 자기 말이 많을수록 높은 점수를 줌
+  function evaluateHeuristic(board, aiPlayer, opponent){
+    var score = 0;
+    state.winLines.forEach(function(line){
+      var aiCount = 0, oppCount = 0;
+      line.forEach(function(idx){
+        if(board[idx] === aiPlayer) aiCount++;
+        else if(board[idx] === opponent) oppCount++;
+      });
+      if(aiCount > 0 && oppCount > 0) return; // 이미 막힌 라인은 가치 없음
+      if(aiCount > 0) score += Math.pow(10, aiCount);
+      if(oppCount > 0) score -= Math.pow(10, oppCount);
+    });
+    return score;
   }
 
   /* ---------- 초기 화면 ---------- */
