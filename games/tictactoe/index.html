@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>틱택토 대전</title>
+<style>
+  :root{
+    --pink:#ffb3c6;
+    --pink-dark:#ff8fab;
+    --blue:#b8d8ff;
+    --blue-dark:#8fc1ff;
+    --purple:#d9c7ff;
+    --bg:#fff7fb;
+    --card:#ffffff;
+    --text:#4a4458;
+    --sub:#8a8398;
+    --line:#f0e6ee;
+    --win:#a8e6b0;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0; width:100%; min-height:100%;
+    background:var(--bg);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    color:var(--text);
+    -webkit-text-size-adjust:100%;
+  }
+  #app{
+    max-width:480px;
+    min-width:280px;
+    margin:0 auto;
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  header{ text-align:center; padding:6px 4px 2px; }
+  header h1{ margin:0 0 4px; font-size:1.4rem; color:var(--pink-dark); }
+  header p{ margin:0; font-size:0.85rem; color:var(--sub); }
+
+  .ad-slot{
+    width:100%;
+    min-height:50px;
+    border:1px dashed #d9cfe0;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.75rem;
+    color:#b3a9c2;
+    background:#fbf6fc;
+  }
+
+  .card{
+    background:var(--card);
+    border-radius:18px;
+    box-shadow:0 6px 16px rgba(180,150,190,0.18);
+    padding:18px;
+  }
+
+  /* 모드 선택 화면 */
+  .mode-btn{
+    width:100%;
+    padding:14px;
+    margin-bottom:10px;
+    border:none;
+    border-radius:14px;
+    font-size:1rem;
+    font-weight:bold;
+    cursor:pointer;
+    background:var(--pink);
+    color:#fff;
+    transition:transform .12s ease, box-shadow .12s ease;
+    box-shadow:0 4px 10px rgba(255,143,171,0.35);
+  }
+  .mode-btn:active{ transform:scale(0.97); }
+  .mode-btn.secondary{ background:var(--blue); box-shadow:0 4px 10px rgba(143,193,255,0.35); }
+
+  .diff-wrap{ margin:10px 0 16px; display:none; }
+  .diff-wrap.show{ display:block; }
+  .diff-title{ font-size:0.85rem; color:var(--sub); margin-bottom:8px; text-align:center; }
+  .diff-options{ display:flex; gap:8px; }
+  .diff-option{
+    flex:1;
+    padding:10px 4px;
+    border-radius:12px;
+    border:2px solid var(--line);
+    background:#fff;
+    font-size:0.85rem;
+    color:var(--text);
+    cursor:pointer;
+    text-align:center;
+  }
+  .diff-option.selected{ border-color:var(--pink-dark); background:#fff0f4; font-weight:bold; }
+
+  .howto{
+    margin-top:14px;
+    padding:12px;
+    background:#f7f3fb;
+    border-radius:12px;
+    font-size:0.8rem;
+    color:var(--sub);
+    line-height:1.6;
+  }
+  .howto b{ color:var(--text); }
+
+  .start-btn{
+    width:100%;
+    margin-top:14px;
+    padding:14px;
+    border:none;
+    border-radius:14px;
+    font-size:1.05rem;
+    font-weight:bold;
+    color:#fff;
+    background:var(--purple);
+    box-shadow:0 4px 10px rgba(217,199,255,0.5);
+    cursor:pointer;
+  }
+  .start-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  /* 게임 플레이 화면 */
+  .scoreboard{
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    padding:10px 6px;
+    background:#f7f3fb;
+    border-radius:12px;
+    margin-bottom:12px;
+    font-size:0.85rem;
+  }
+  .score-item{ text-align:center; }
+  .score-item .label{ color:var(--sub); font-size:0.75rem; }
+  .score-item .value{ font-size:1.1rem; font-weight:bold; color:var(--pink-dark); }
+
+  .turn-indicator{
+    text-align:center;
+    font-size:0.95rem;
+    font-weight:bold;
+    margin-bottom:12px;
+    color:var(--text);
+    min-height:1.3em;
+  }
+
+  .board{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    width:100%;
+    aspect-ratio:1/1;
+  }
+  .cell{
+    background:#fbf8fd;
+    border:2px solid var(--line);
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:min(11vw,2.6rem);
+    font-weight:bold;
+    cursor:pointer;
+    color:var(--text);
+    user-select:none;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .cell:active{ transform:scale(0.95); }
+  .cell.x{ color:var(--pink-dark); }
+  .cell.o{ color:var(--blue-dark); }
+  .cell.win{
+    background:var(--win);
+    animation:pulse .6s ease-in-out infinite alternate;
+  }
+  @keyframes pulse{
+    from{ transform:scale(1); }
+    to{ transform:scale(1.06); }
+  }
+
+  .in-game-controls{
+    display:flex;
+    justify-content:center;
+    margin-top:14px;
+  }
+  .link-btn{
+    background:none;
+    border:none;
+    color:var(--sub);
+    font-size:0.8rem;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+
+  /* 결과 화면 */
+  .result-emoji{ text-align:center; font-size:2.4rem; margin-bottom:6px; }
+  .result-text{ text-align:center; font-size:1.15rem; font-weight:bold; margin-bottom:18px; }
+  .result-btns{ display:flex; flex-direction:column; gap:8px; }
+  .result-btns button{
+    padding:13px;
+    border:none;
+    border-radius:14px;
+    font-size:0.95rem;
+    font-weight:bold;
+    cursor:pointer;
+  }
+  .btn-replay{ background:var(--pink); color:#fff; }
+  .btn-mode{ background:var(--blue); color:#fff; }
+  .btn-quit{ background:#f0ecf5; color:var(--sub); }
+
+  .ended-msg{ text-align:center; font-size:0.95rem; color:var(--sub); padding:20px 0; }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>틱택토 대전</h1>
+    <p>AI와 대결하거나, 친구와 한 기기로 번갈아 즐기는 3x3 틱택토</p>
+  </header>
+
+  <div class="ad-slot" id="ad-slot-top">여기에 광고 영역</div>
+
+  <!-- 모드 선택 화면 -->
+  <section class="card" id="screen-menu">
+    <button class="mode-btn" id="btn-mode-pvc" type="button">1인 플레이 (AI와 대전)</button>
+    <button class="mode-btn secondary" id="btn-mode-pvp" type="button">로컬 2인 대전</button>
+
+    <div class="diff-wrap" id="diff-wrap">
+      <div class="diff-title">AI 난이도 선택</div>
+      <div class="diff-options">
+        <div class="diff-option" data-diff="easy">쉬움</div>
+        <div class="diff-option" data-diff="normal">보통</div>
+        <div class="diff-option" data-diff="hard">무적</div>
+      </div>
+    </div>
+
+    <div class="howto" id="howto-text">
+      <b>조작 방법</b><br>
+      원하는 칸을 탭(터치) 또는 클릭하면 표시가 놓입니다.<br>
+      가로, 세로, 대각선 중 한 줄을 먼저 완성하면 승리!
+    </div>
+
+    <button class="start-btn" id="btn-start" type="button" disabled>모드를 선택하세요</button>
+  </section>
+
+  <!-- 게임 플레이 화면 -->
+  <section class="card hidden" id="screen-play">
+    <div class="scoreboard">
+      <div class="score-item">
+        <div class="label" id="label-p1">Player 1 (X)</div>
+        <div class="value" id="score-p1">0</div>
+      </div>
+      <div class="score-item">
+        <div class="label">무승부</div>
+        <div class="value" id="score-draw">0</div>
+      </div>
+      <div class="score-item">
+        <div class="label" id="label-p2">Player 2 (O)</div>
+        <div class="value" id="score-p2">0</div>
+      </div>
+    </div>
+
+    <div class="turn-indicator" id="turn-indicator"></div>
+
+    <div class="board" id="board"></div>
+
+    <div class="in-game-controls">
+      <button class="link-btn" id="btn-give-up" type="button">모드 다시 선택</button>
+    </div>
+  </section>
+
+  <!-- 결과 화면 -->
+  <section class="card hidden" id="screen-result">
+    <div class="result-emoji" id="result-emoji">🎉</div>
+    <div class="result-text" id="result-text">결과</div>
+    <div class="result-btns" id="result-btns">
+      <button class="btn-replay" id="btn-replay" type="button">다시하기</button>
+      <button class="btn-mode" id="btn-back-menu" type="button">모드 다시 선택</button>
+      <button class="btn-quit" id="btn-quit" type="button">그만하기</button>
+    </div>
+    <div class="ended-msg hidden" id="ended-msg">플레이해주셔서 감사합니다 🙂</div>
+  </section>
+
+  <div class="ad-slot" id="ad-slot-bottom">여기에 광고 영역</div>
+
+</div>
+
+<script>
+(function(){
+
+  /* ---------- 상태 값 ---------- */
+  var WIN_LINES = [
+    [0,1,2],[3,4,5],[6,7,8], // 가로
+    [0,3,6],[1,4,7],[2,5,8], // 세로
+    [0,4,8],[2,4,6]          // 대각선
+  ];
+
+  var state = {
+    mode: null,        // 'pvc' | 'pvp'
+    difficulty: null,  // 'easy' | 'normal' | 'hard'
+    board: Array(9).fill(null),
+    current: 'X',       // 현재 턴 마크
+    scores: { X:0, O:0, draw:0 },
+    gameOver: false,
+    aiThinking: false
+  };
+
+  /* ---------- 엘리먼트 캐시 ---------- */
+  var el = {
+    screenMenu: document.getElementById('screen-menu'),
+    screenPlay: document.getElementById('screen-play'),
+    screenResult: document.getElementById('screen-result'),
+    btnModePvc: document.getElementById('btn-mode-pvc'),
+    btnModePvp: document.getElementById('btn-mode-pvp'),
+    diffWrap: document.getElementById('diff-wrap'),
+    diffOptions: document.querySelectorAll('.diff-option'),
+    btnStart: document.getElementById('btn-start'),
+    board: document.getElementById('board'),
+    turnIndicator: document.getElementById('turn-indicator'),
+    scoreP1: document.getElementById('score-p1'),
+    scoreP2: document.getElementById('score-p2'),
+    scoreDraw: document.getElementById('score-draw'),
+    labelP1: document.getElementById('label-p1'),
+    labelP2: document.getElementById('label-p2'),
+    btnGiveUp: document.getElementById('btn-give-up'),
+    resultEmoji: document.getElementById('result-emoji'),
+    resultText: document.getElementById('result-text'),
+    resultBtns: document.getElementById('result-btns'),
+    endedMsg: document.getElementById('ended-msg'),
+    btnReplay: document.getElementById('btn-replay'),
+    btnBackMenu: document.getElementById('btn-back-menu'),
+    btnQuit: document.getElementById('btn-quit')
+  };
+
+  /* ---------- 화면 전환 ---------- */
+  function showScreen(name){
+    el.screenMenu.classList.toggle('hidden', name !== 'menu');
+    el.screenPlay.classList.toggle('hidden', name !== 'play');
+    el.screenResult.classList.toggle('hidden', name !== 'result');
+  }
+
+  /* ---------- 모드 선택 화면 로직 ---------- */
+  function selectMode(mode){
+    state.mode = mode;
+    el.btnModePvc.classList.toggle('secondary', mode !== 'pvc');
+    el.btnModePvp.classList.toggle('secondary', mode !== 'pvp');
+    el.diffWrap.classList.toggle('show', mode === 'pvc');
+    updateStartButton();
+  }
+
+  function selectDifficulty(diff){
+    state.difficulty = diff;
+    el.diffOptions.forEach(function(opt){
+      opt.classList.toggle('selected', opt.getAttribute('data-diff') === diff);
+    });
+    updateStartButton();
+  }
+
+  // 모드(및 1인 모드일 때 난이도)가 모두 정해져야 시작 버튼 활성화
+  function updateStartButton(){
+    var ready = state.mode === 'pvp' || (state.mode === 'pvc' && state.difficulty);
+    el.btnStart.disabled = !ready;
+    el.btnStart.textContent = ready ? '게임 시작' : '모드를 선택하세요';
+  }
+
+  el.btnModePvc.addEventListener('click', function(){ selectMode('pvc'); });
+  el.btnModePvp.addEventListener('click', function(){ selectMode('pvp'); });
+  el.diffOptions.forEach(function(opt){
+    opt.addEventListener('click', function(){ selectDifficulty(opt.getAttribute('data-diff')); });
+  });
+  el.btnStart.addEventListener('click', startGame);
+
+  /* ---------- 게임 시작/리셋 ---------- */
+  function startGame(){
+    state.scores = { X:0, O:0, draw:0 };
+    if(state.mode === 'pvc'){
+      el.labelP1.textContent = 'Player (X)';
+      el.labelP2.textContent = 'AI (O)';
+    } else {
+      el.labelP1.textContent = 'Player 1 (X)';
+      el.labelP2.textContent = 'Player 2 (O)';
+    }
+    updateScoreboard();
+    resetRound();
+    showScreen('play');
+  }
+
+  // 점수는 유지한 채 보드만 새로 시작 (다시하기)
+  function resetRound(){
+    state.board = Array(9).fill(null);
+    state.current = 'X';
+    state.gameOver = false;
+    state.aiThinking = false;
+    renderBoard();
+    updateTurnIndicator();
+  }
+
+  function backToMenu(){
+    state.mode = null;
+    state.difficulty = null;
+    el.btnModePvc.classList.remove('secondary');
+    el.btnModePvp.classList.remove('secondary');
+    el.diffWrap.classList.remove('show');
+    el.diffOptions.forEach(function(opt){ opt.classList.remove('selected'); });
+    updateStartButton();
+    showScreen('menu');
+  }
+
+  el.btnGiveUp.addEventListener('click', backToMenu);
+
+  /* ---------- 보드 렌더링 ---------- */
+  function renderBoard(){
+    el.board.innerHTML = '';
+    state.board.forEach(function(mark, idx){
+      var cell = document.createElement('div');
+      cell.className = 'cell' + (mark ? ' ' + mark.toLowerCase() : '');
+      cell.textContent = mark || '';
+      cell.setAttribute('data-idx', idx);
+      cell.addEventListener('click', function(){ handleCellInput(idx); });
+      // 모바일 터치 입력 지원 (클릭 이벤트와 중복 실행 방지)
+      cell.addEventListener('touchstart', function(e){
+        e.preventDefault();
+        handleCellInput(idx);
+      }, { passive:false });
+      el.board.appendChild(cell);
+    });
+  }
+
+  function updateTurnIndicator(){
+    if(state.gameOver) return;
+    if(state.mode === 'pvc'){
+      el.turnIndicator.textContent = state.current === 'X' ? '당신의 차례입니다' : 'AI가 생각 중...';
+    } else {
+      el.turnIndicator.textContent = (state.current === 'X' ? 'Player 1' : 'Player 2') + '의 차례입니다';
+    }
+  }
+
+  function updateScoreboard(){
+    el.scoreP1.textContent = state.scores.X;
+    el.scoreP2.textContent = state.scores.O;
+    el.scoreDraw.textContent = state.scores.draw;
+  }
+
+  /* ---------- 입력 처리 ---------- */
+  function handleCellInput(idx){
+    if(state.gameOver || state.board[idx] || state.aiThinking) return;
+    if(state.mode === 'pvc' && state.current !== 'X') return; // AI 턴에는 사람 입력 무시
+    placeMark(idx, state.current);
+  }
+
+  function placeMark(idx, mark){
+    state.board[idx] = mark;
+    renderBoard();
+
+    var result = checkResult(state.board);
+    if(result){
+      finishRound(result);
+      return;
+    }
+
+    state.current = state.current === 'X' ? 'O' : 'X';
+    updateTurnIndicator();
+
+    // 1인 모드에서 AI 차례가 되면 약간의 딜레이 후 수를 둠 (생각하는 느낌)
+    if(state.mode === 'pvc' && state.current === 'O'){
+      state.aiThinking = true;
+      setTimeout(function(){
+        var move = getAiMove(state.board.slice(), state.difficulty);
+        state.aiThinking = false;
+        if(!state.gameOver && move !== null) placeMark(move, 'O');
+      }, 450);
+    }
+  }
+
+  /* ---------- 승패 판정 ---------- */
+  // board 상태를 검사해 승자와 승리 라인, 무승부 여부를 반환
+  function checkResult(board){
+    for(var i=0;i<WIN_LINES.length;i++){
+      var line = WIN_LINES[i];
+      var a=board[line[0]], b=board[line[1]], c=board[line[2]];
+      if(a && a===b && a===c){
+        return { winner:a, line:line };
+      }
+    }
+    if(board.every(function(v){ return v; })){
+      return { winner:null, line:null }; // 무승부
+    }
+    return null; // 게임 계속
+  }
+
+  function finishRound(result){
+    state.gameOver = true;
+
+    if(result.line){
+      result.line.forEach(function(i){
+        el.board.children[i].classList.add('win');
+      });
+    }
+
+    if(result.winner){
+      state.scores[result.winner]++;
+    } else {
+      state.scores.draw++;
+    }
+    updateScoreboard();
+
+    setTimeout(function(){ showResult(result); }, 550);
+  }
+
+  /* ---------- 결과 화면 ---------- */
+  function showResult(result){
+    el.resultBtns.classList.remove('hidden');
+    el.endedMsg.classList.add('hidden');
+
+    if(!result.winner){
+      el.resultEmoji.textContent = '🤝';
+      el.resultText.textContent = '무승부입니다';
+    } else if(state.mode === 'pvc'){
+      el.resultEmoji.textContent = result.winner === 'X' ? '🎉' : '😢';
+      el.resultText.textContent = result.winner === 'X' ? '승리했습니다!' : 'AI가 승리했습니다';
+    } else {
+      el.resultEmoji.textContent = '🎉';
+      el.resultText.textContent = (result.winner === 'X' ? 'Player 1' : 'Player 2') + ' 승리!';
+    }
+
+    showScreen('result');
+  }
+
+  el.btnReplay.addEventListener('click', function(){
+    resetRound();
+    showScreen('play');
+  });
+  el.btnBackMenu.addEventListener('click', backToMenu);
+
+  // 그만하기: 페이지 이동 없이 결과 화면에 머무르며 종료 메시지만 표시
+  el.btnQuit.addEventListener('click', function(){
+    el.resultBtns.classList.add('hidden');
+    el.endedMsg.classList.remove('hidden');
+  });
+
+  /* ---------- AI 로직 ---------- */
+  // 난이도에 따라 AI가 둘 위치(인덱스)를 결정
+  function getAiMove(board, difficulty){
+    var empties = emptyIndices(board);
+    if(empties.length === 0) return null;
+
+    if(difficulty === 'easy'){
+      return randomMove(empties);
+    }
+    if(difficulty === 'normal'){
+      return Math.random() < 0.7 ? bestMove(board, 'O') : randomMove(empties);
+    }
+    // 무적: 항상 미니맥스 최선의 수
+    return bestMove(board, 'O');
+  }
+
+  function emptyIndices(board){
+    var res = [];
+    board.forEach(function(v,i){ if(!v) res.push(i); });
+    return res;
+  }
+
+  function randomMove(empties){
+    return empties[Math.floor(Math.random() * empties.length)];
+  }
+
+  // 미니맥스로 현재 board에서 player에게 가장 유리한 칸을 찾음
+  function bestMove(board, player){
+    var bestScore = -Infinity;
+    var move = null;
+    emptyIndices(board).forEach(function(idx){
+      board[idx] = player;
+      var score = minimax(board, 0, false, player);
+      board[idx] = null;
+      if(score > bestScore){
+        bestScore = score;
+        move = idx;
+      }
+    });
+    return move;
+  }
+
+  // 미니맥스 알고리즘: 3x3 보드는 탐색량이 적어 깊이 제한 없이 완전 탐색
+  function minimax(board, depth, isMaximizing, aiPlayer){
+    var opponent = aiPlayer === 'O' ? 'X' : 'O';
+    var result = checkResult(board);
+    if(result){
+      if(result.winner === aiPlayer) return 10 - depth;
+      if(result.winner === opponent) return depth - 10;
+      return 0; // 무승부
+    }
+
+    if(isMaximizing){
+      var best = -Infinity;
+      emptyIndices(board).forEach(function(idx){
+        board[idx] = aiPlayer;
+        best = Math.max(best, minimax(board, depth+1, false, aiPlayer));
+        board[idx] = null;
+      });
+      return best;
+    } else {
+      var worst = Infinity;
+      emptyIndices(board).forEach(function(idx){
+        board[idx] = opponent;
+        worst = Math.min(worst, minimax(board, depth+1, true, aiPlayer));
+        board[idx] = null;
+      });
+      return worst;
+    }
+  }
+
+  /* ---------- 초기 화면 ---------- */
+  showScreen('menu');
+
+})();
+</script>
+</body>
+</html>
