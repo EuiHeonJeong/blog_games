@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>비행 슈팅</title>
+<style>
+  :root{
+    --pink:#ff6b57;
+    --pink-dark:#e14f32;
+    --blue:#3da5ff;
+    --blue-dark:#1c86e0;
+    --purple:#2bc48a;
+    --purple-dark:#1e9c6c;
+    --bg:#fff6e9;
+    --card:#ffffff;
+    --text:#23272f;
+    --sub:#868e96;
+    --line:#e9ecef;
+    --win:#ffd43b;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0; width:100%; min-height:100%;
+    background:var(--bg);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    color:var(--text);
+    -webkit-text-size-adjust:100%;
+  }
+  #app{
+    max-width:480px;
+    min-width:280px;
+    margin:0 auto;
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  @media (min-width:700px){
+    #app{ max-width:640px; padding:20px; }
+  }
+  @media (min-width:1024px){
+    #app{ max-width:860px; padding:24px; }
+  }
+  header{ text-align:center; padding:6px 4px 2px; }
+  header h1{ margin:0 0 4px; font-size:1.4rem; color:var(--pink-dark); }
+  header p{ margin:0; font-size:0.85rem; color:var(--sub); word-break:keep-all; }
+
+  .ad-slot{
+    width:100%;
+    min-height:50px;
+    border:2px dashed #ced4da;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.75rem;
+    color:#adb5bd;
+    background:#ffffff;
+  }
+
+  .card{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+  }
+
+  .home-link{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    width:fit-content;
+    margin:0 auto 16px;
+    padding:8px 16px;
+    border-radius:999px;
+    background:#fff;
+    border:2px solid var(--line);
+    color:var(--pink-dark);
+    font-size:0.85rem;
+    font-weight:bold;
+    text-decoration:none;
+    box-shadow:0 3px 0 var(--line);
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .home-link:active{ transform:translateY(3px); box-shadow:0 0 0 var(--line); }
+
+  /* 모드 선택 */
+  .mode-btn{
+    width:100%;
+    padding:14px;
+    margin-bottom:10px;
+    border:none;
+    border-radius:10px;
+    font-size:1rem;
+    font-weight:bold;
+    cursor:pointer;
+    background:var(--pink);
+    color:#fff;
+    transition:transform .08s ease, box-shadow .08s ease, opacity .15s ease;
+    box-shadow:0 4px 0 var(--pink-dark);
+  }
+  .mode-btn:active{ transform:translateY(4px); box-shadow:0 0 0 var(--pink-dark); }
+  .mode-btn.secondary{ background:var(--blue); box-shadow:0 4px 0 var(--blue-dark); }
+  .mode-btn.secondary:active{ box-shadow:0 0 0 var(--blue-dark); }
+  .mode-btn.dimmed{ opacity:0.45; }
+
+  .howto{
+    margin-top:14px;
+    padding:12px;
+    background:#f1f3f5;
+    border-radius:8px;
+    font-size:0.8rem;
+    color:var(--sub);
+    line-height:1.6;
+  }
+  .howto b{ color:var(--text); }
+
+  .start-btn{
+    width:100%;
+    margin-top:14px;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    font-size:1.05rem;
+    font-weight:bold;
+    color:#fff;
+    background:var(--purple);
+    box-shadow:0 4px 0 var(--purple-dark);
+    cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .start-btn:active{ transform:translateY(4px); box-shadow:0 0 0 var(--purple-dark); }
+  .start-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  /* 게임 플레이 화면 */
+  .canvas-wrap{
+    position:relative;
+    width:100%;
+    max-width:420px;
+    margin:0 auto;
+    aspect-ratio:360/560;
+    border-radius:12px;
+    overflow:hidden;
+    background:#8ecfff;
+    touch-action:none;
+  }
+  #game-canvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+  }
+  .hud{
+    position:absolute;
+    top:8px; left:8px; right:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    font-size:0.68rem;
+    font-weight:bold;
+    color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.55);
+    pointer-events:none;
+    line-height:1.5;
+    white-space:pre-line;
+  }
+  .hud-p2{ text-align:right; }
+
+  .bomb-btn{
+    position:absolute;
+    bottom:12px;
+    width:52px;
+    height:52px;
+    border-radius:50%;
+    border:3px solid #fff;
+    background:rgba(255,255,255,0.22);
+    color:#fff;
+    font-size:1.3rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    -webkit-user-select:none;
+    user-select:none;
+    cursor:pointer;
+  }
+  .bomb-btn.p1{ left:12px; }
+  .bomb-btn.p2{ right:12px; }
+  .bomb-btn:active{ background:rgba(255,255,255,0.5); }
+
+  .in-game-controls{
+    display:flex;
+    justify-content:center;
+    margin-top:14px;
+  }
+  .link-btn{
+    background:none;
+    border:none;
+    color:var(--sub);
+    font-size:0.8rem;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+
+  /* 결과 화면 */
+  .result-emoji{ text-align:center; font-size:2.4rem; margin-bottom:6px; }
+  .result-text{ text-align:center; font-size:1.15rem; font-weight:bold; margin-bottom:6px; }
+  .result-stats{ text-align:center; font-size:0.9rem; color:var(--sub); margin-bottom:18px; }
+  .result-btns{ display:flex; flex-direction:column; gap:10px; }
+  .result-btns button{
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    font-size:0.95rem;
+    font-weight:bold;
+    cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .btn-replay{ background:var(--pink); color:#fff; box-shadow:0 4px 0 var(--pink-dark); }
+  .btn-replay:active{ transform:translateY(4px); box-shadow:0 0 0 var(--pink-dark); }
+  .btn-mode{ background:var(--blue); color:#fff; box-shadow:0 4px 0 var(--blue-dark); }
+  .btn-mode:active{ transform:translateY(4px); box-shadow:0 0 0 var(--blue-dark); }
+  .btn-quit{ background:#f1f3f5; color:var(--sub); box-shadow:0 4px 0 var(--line); }
+  .btn-quit:active{ transform:translateY(4px); box-shadow:0 0 0 var(--line); }
+
+  .ended-msg{ text-align:center; font-size:0.95rem; color:var(--sub); padding:20px 0; }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>✈️ 비행 슈팅</h1>
+    <p>하늘을 가르며 적을 물리치는 세로 슈팅 게임! 총 5개 스테이지에 도전하세요</p>
+  </header>
+
+  <div class="ad-slot" id="ad-slot-top">여기에 광고 영역</div>
+
+  <!-- 모드 선택 화면 -->
+  <section class="card" id="screen-menu">
+    <a class="home-link" href="../../index.html">🏠 홈으로</a>
+    <button class="mode-btn" id="btn-mode-solo" type="button">1인 플레이</button>
+    <button class="mode-btn secondary" id="btn-mode-coop" type="button">2인 협동 플레이</button>
+
+    <div class="howto" id="howto-text">
+      <b>조작 방법</b><br>
+      화면을 드래그(터치·마우스)하면 비행체가 따라 움직이고 총알은 자동으로 발사됩니다.<br>
+      화면 하단의 💣 버튼(또는 스페이스바)을 누르면 폭탄이 터져 적 탄막을 없애고 큰 피해를 줍니다.<br>
+      적을 물리치면 가끔 아이템이 떨어지며, 먹으면 무기가 점점 강력해져요.<br>
+      탱크·전투기·드론·거대 비행선까지 등장하는 5개 스테이지를 모두 클리어해보세요!<br>
+      <span id="howto-mode">키보드로도 조작할 수 있어요: 1P는 방향키+스페이스바, 2P는 WASD+F키.</span>
+    </div>
+
+    <button class="start-btn" id="btn-start" type="button" disabled>모드를 선택하세요</button>
+  </section>
+
+  <!-- 게임 플레이 화면 -->
+  <section class="card hidden" id="screen-play">
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="game-canvas" width="360" height="560"></canvas>
+      <div class="hud">
+        <div class="hud-p1" id="hud-p1"></div>
+        <div class="hud-p2 hidden" id="hud-p2"></div>
+      </div>
+      <button class="bomb-btn p1" id="bomb-btn-p1" type="button">💣</button>
+      <button class="bomb-btn p2 hidden" id="bomb-btn-p2" type="button">💣</button>
+    </div>
+
+    <div class="in-game-controls">
+      <button class="link-btn" id="btn-give-up" type="button">모드 다시 선택</button>
+    </div>
+  </section>
+
+  <!-- 결과 화면 -->
+  <section class="card hidden" id="screen-result">
+    <a class="home-link" href="../../index.html">🏠 홈으로</a>
+    <div class="result-emoji" id="result-emoji">🎉</div>
+    <div class="result-text" id="result-text">결과</div>
+    <div class="result-stats" id="result-stats"></div>
+    <div class="result-btns" id="result-btns">
+      <button class="btn-replay" id="btn-replay" type="button">다시하기</button>
+      <button class="btn-mode" id="btn-back-menu" type="button">모드 다시 선택</button>
+      <button class="btn-quit" id="btn-quit" type="button">그만하기</button>
+    </div>
+    <div class="ended-msg hidden" id="ended-msg">
+      플레이해주셔서 감사합니다 🙂<br>
+      <button class="link-btn" id="btn-new-game" type="button">새 게임 시작</button>
+    </div>
+  </section>
+
+  <div class="ad-slot" id="ad-slot-bottom">여기에 광고 영역</div>
+
+</div>
+
+<script>
+(function(){
+
+  /* ---------- 상수 ---------- */
+  var CANVAS_W = 360, CANVAS_H = 560;
+  var STAGE_COUNT = 5;
+  var ITEM_DROP_CHANCE = 0.2;
+
+  var KEY_MAP_P1 = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
+  var KEY_MAP_P2 = { KeyA:'left', KeyD:'right', KeyW:'up', KeyS:'down' };
+
+  /* ---------- 엘리먼트 캐시 ---------- */
+  var el = {
+    screenMenu: document.getElementById('screen-menu'),
+    screenPlay: document.getElementById('screen-play'),
+    screenResult: document.getElementById('screen-result'),
+    btnModeSolo: document.getElementById('btn-mode-solo'),
+    btnModeCoop: document.getElementById('btn-mode-coop'),
+    howtoMode: document.getElementById('howto-mode'),
+    btnStart: document.getElementById('btn-start'),
+    canvas: document.getElementById('game-canvas'),
+    hudP1: document.getElementById('hud-p1'),
+    hudP2: document.getElementById('hud-p2'),
+    bombBtnP1: document.getElementById('bomb-btn-p1'),
+    bombBtnP2: document.getElementById('bomb-btn-p2'),
+    btnGiveUp: document.getElementById('btn-give-up'),
+    resultEmoji: document.getElementById('result-emoji'),
+    resultText: document.getElementById('result-text'),
+    resultStats: document.getElementById('result-stats'),
+    resultBtns: document.getElementById('result-btns'),
+    endedMsg: document.getElementById('ended-msg'),
+    btnReplay: document.getElementById('btn-replay'),
+    btnBackMenu: document.getElementById('btn-back-menu'),
+    btnQuit: document.getElementById('btn-quit'),
+    btnNewGame: document.getElementById('btn-new-game')
+  };
+  var ctx = el.canvas.getContext('2d');
+
+  /* ---------- 상태 값 ---------- */
+  var state = {
+    mode: null,          // 'solo' | 'coop'
+    running: false,
+    lastTime: 0,
+    rafId: null,
+    time: 0,
+    keys: {},
+    players: [],
+    bullets: [],
+    enemyBullets: [],
+    enemies: [],
+    items: [],
+    particles: [],
+    bombEffects: [],
+    screenFlash: 0,
+    clouds: [],
+    stars: [],
+    cityBuildings: [],
+    nebulas: [],
+    stage: 1,
+    stagePhase: 'wave',   // 'wave' | 'bossWarning' | 'boss' | 'clear'
+    stageTimer: 0,
+    spawnTimer: 0,
+    bannerTimer: 0,
+    bannerText: '',
+    boss: null,
+    score: 0,
+    bgFadeFrom: 1,
+    bgFadeTo: 1,
+    bgFadeProgress: 1     // 1이면 전환 없이 bgFadeTo(현재 스테이지) 배경만 그림
+  };
+
+  /* ---------- 화면 전환 ---------- */
+  function showScreen(name){
+    el.screenMenu.classList.toggle('hidden', name !== 'menu');
+    el.screenPlay.classList.toggle('hidden', name !== 'play');
+    el.screenResult.classList.toggle('hidden', name !== 'result');
+  }
+
+  /* ---------- 모드 선택 화면 로직 ---------- */
+  function selectMode(mode){
+    state.mode = mode;
+    el.btnModeSolo.classList.toggle('dimmed', mode !== 'solo');
+    el.btnModeCoop.classList.toggle('dimmed', mode !== 'coop');
+    updateStartButton();
+  }
+
+  function updateStartButton(){
+    var ready = state.mode !== null;
+    el.btnStart.disabled = !ready;
+    el.btnStart.textContent = ready ? '게임 시작' : '모드를 선택하세요';
+  }
+
+  el.btnModeSolo.addEventListener('click', function(){ selectMode('solo'); });
+  el.btnModeCoop.addEventListener('click', function(){ selectMode('coop'); });
+  el.btnStart.addEventListener('click', startGame);
+
+  function backToMenu(){
+    stopLoop();
+    state.mode = null;
+    el.btnModeSolo.classList.remove('dimmed');
+    el.btnModeCoop.classList.remove('dimmed');
+    updateStartButton();
+    showScreen('menu');
+  }
+  el.btnGiveUp.addEventListener('click', backToMenu);
+
+  /* ---------- 유틸 ---------- */
+  function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
+  function removeFromArray(arr, item){ var i = arr.indexOf(item); if(i !== -1) arr.splice(i, 1); }
+  function dist2(ax, ay, bx, by){ var dx = ax - bx, dy = ay - by; return dx * dx + dy * dy; }
+  function circleHit(ax, ay, ar, bx, by, br){ var rr = ar + br; return dist2(ax, ay, bx, by) <= rr * rr; }
+
+  /* ---------- 플레이어 ---------- */
+  function createPlayer(id, mode){
+    var singleSlot = mode === 'solo';
+    return {
+      id: id,
+      x: singleSlot ? CANVAS_W / 2 : (id === 1 ? CANVAS_W * 0.35 : CANVAS_W * 0.65),
+      y: CANVAS_H - 70,
+      r: 13,
+      lives: 2,
+      bombs: 2,
+      weaponLevel: 1,
+      fireTimer: 0,
+      bombFlash: 0,
+      invincible: 0,
+      down: false,
+      touchId: null,
+      dragLastX: null,
+      dragLastY: null,
+      color: id === 1 ? '#3da5ff' : '#ff6b57',
+      colorDark: id === 1 ? '#1c86e0' : '#e14f32'
+    };
+  }
+
+  function fireInterval(player){ return Math.max(90, 200 - player.weaponLevel * 35); }
+
+  function firePlayerBullets(player){
+    var speed = -420;
+    var shots = [];
+    if(player.weaponLevel === 1){
+      shots.push({ x:player.x, y:player.y - player.r, vx:0, vy:speed });
+    } else if(player.weaponLevel === 2){
+      shots.push({ x:player.x - 6, y:player.y - player.r, vx:0, vy:speed });
+      shots.push({ x:player.x + 6, y:player.y - player.r, vx:0, vy:speed });
+    } else {
+      shots.push({ x:player.x, y:player.y - player.r, vx:0, vy:speed });
+      shots.push({ x:player.x - 10, y:player.y - player.r, vx:-50, vy:speed });
+      shots.push({ x:player.x + 10, y:player.y - player.r, vx:50, vy:speed });
+    }
+    shots.forEach(function(b){
+      b.owner = player.id; b.dmg = 1; b.r = 4;
+      state.bullets.push(b);
+    });
+  }
+
+  function applyKeyboardMove(player, mapObj, dt){
+    var speed = 260;
+    var dx = 0, dy = 0;
+    for(var code in mapObj){
+      if(state.keys[code]){
+        var dir = mapObj[code];
+        if(dir === 'left') dx -= 1;
+        if(dir === 'right') dx += 1;
+        if(dir === 'up') dy -= 1;
+        if(dir === 'down') dy += 1;
+      }
+    }
+    if(dx || dy){
+      var len = Math.sqrt(dx * dx + dy * dy);
+      player.x = clamp(player.x + (dx / len) * speed * dt, player.r, CANVAS_W - player.r);
+      player.y = clamp(player.y + (dy / len) * speed * dt, player.r, CANVAS_H - player.r);
+    }
+  }
+
+  function updatePlayers(dt){
+    state.players.forEach(function(p, idx){
+      if(p.down) return;
+      applyKeyboardMove(p, idx === 0 ? KEY_MAP_P1 : KEY_MAP_P2, dt);
+      if(p.invincible > 0) p.invincible -= dt * 1000;
+      if(p.bombFlash > 0) p.bombFlash -= dt * 1000;
+      p.fireTimer -= dt * 1000;
+      if(p.fireTimer <= 0){
+        firePlayerBullets(p);
+        p.fireTimer = fireInterval(p);
+      }
+    });
+  }
+
+  // 피격 규칙: 무기 레벨이 남아있으면 레벨만 1 떨어뜨리고 생존, 이미 최소 레벨(1)에서
+  // 맞으면 그때 목숨을 하나 소모하고 무기 레벨 1로 초기화된 채 다시 등장(리스폰)함
+  function hitPlayer(player){
+    if(player.invincible > 0 || player.down) return;
+    spawnParticles(player.x, player.y, '#ffffff');
+    if(player.weaponLevel > 1){
+      player.weaponLevel--;
+      player.invincible = 900;
+    } else if(player.lives > 0){
+      player.lives--;
+      player.weaponLevel = 1;
+      player.invincible = 1700;
+      player.x = state.players.length > 1 ? (player.id === 1 ? CANVAS_W * 0.35 : CANVAS_W * 0.65) : CANVAS_W / 2;
+      player.y = CANVAS_H - 70;
+    } else {
+      player.down = true;
+      player.touchId = null;
+    }
+    checkGameOver();
+  }
+
+  function checkGameOver(){
+    if(state.stagePhase === 'gameover') return;
+    var allDown = state.players.every(function(p){ return p.down; });
+    if(allDown){
+      state.stagePhase = 'gameover';
+      state.bannerTimer = 1600;
+      state.bannerText = '💥 게임 오버';
+    }
+  }
+
+  function applyItem(player){
+    if(player.weaponLevel < 3) player.weaponLevel++;
+    else player.bombs = Math.min(5, player.bombs + 1);
+  }
+
+  function triggerBomb(idx){
+    if(!state.running) return;
+    var p = state.players[idx];
+    if(!p || p.down || p.bombs <= 0) return;
+    p.bombs--;
+    p.bombFlash = 400;
+    state.bombEffects.push({ x:p.x, y:p.y, age:0, duration:550 });
+    state.screenFlash = 220;
+    state.enemyBullets = [];
+    state.enemies.forEach(function(en){ en.hp -= 5; });
+    for(var i = state.enemies.length - 1; i >= 0; i--){
+      if(state.enemies[i].hp <= 0) killEnemy(state.enemies[i]);
+    }
+  }
+
+  function updateBombEffects(dt){
+    state.bombEffects.forEach(function(fx){ fx.age += dt * 1000; });
+    state.bombEffects = state.bombEffects.filter(function(fx){ return fx.age < fx.duration; });
+    if(state.screenFlash > 0) state.screenFlash = Math.max(0, state.screenFlash - dt * 1000);
+  }
+
+  function drawBombEffects(){
+    state.bombEffects.forEach(function(fx){
+      var t = fx.age / fx.duration;
+      ctx.strokeStyle = 'rgba(255,255,255,' + (1 - t) + ')';
+      ctx.lineWidth = 6 * (1 - t) + 1;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, t * 260, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,214,10,' + (0.7 * (1 - t)) + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, t * 190, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    if(state.screenFlash > 0){
+      ctx.fillStyle = 'rgba(255,255,255,' + Math.min(0.55, (state.screenFlash / 220) * 0.55) + ')';
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    }
+  }
+
+  /* ---------- 입력 처리 ---------- */
+  function toCanvasCoords(clientX, clientY){
+    var rect = el.canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (CANVAS_W / rect.width),
+      y: (clientY - rect.top) * (CANVAS_H / rect.height)
+    };
+  }
+
+  // 터치/마우스 시작 지점에서 비행체가 순간이동하지 않도록, 시작점은 위치만 기록해두고
+  // 이후 움직인 만큼(델타)만 비행체에 더해서 "드래그로 미는" 느낌을 냄
+  function startDrag(player, clientX, clientY){
+    if(!player || player.down) return;
+    var c = toCanvasCoords(clientX, clientY);
+    player.dragLastX = c.x;
+    player.dragLastY = c.y;
+  }
+
+  function continueDrag(player, clientX, clientY){
+    if(!player || player.down || player.dragLastX === null) return;
+    var c = toCanvasCoords(clientX, clientY);
+    player.x = clamp(player.x + (c.x - player.dragLastX), player.r, CANVAS_W - player.r);
+    player.y = clamp(player.y + (c.y - player.dragLastY), player.r, CANVAS_H - player.r);
+    player.dragLastX = c.x;
+    player.dragLastY = c.y;
+  }
+
+  var mouseDown = false;
+  el.canvas.addEventListener('mousedown', function(e){
+    mouseDown = true;
+    startDrag(state.players[0], e.clientX, e.clientY);
+  });
+  window.addEventListener('mousemove', function(e){
+    if(!mouseDown) return;
+    continueDrag(state.players[0], e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', function(){
+    mouseDown = false;
+    if(state.players[0]){ state.players[0].dragLastX = null; state.players[0].dragLastY = null; }
+  });
+
+  function findPlayerByTouch(id){
+    for(var i = 0; i < state.players.length; i++){
+      if(state.players[i].touchId === id) return { player:state.players[i], idx:i };
+    }
+    return null;
+  }
+
+  function assignTouch(t){
+    for(var i = 0; i < state.players.length; i++){
+      var p = state.players[i];
+      if(p.touchId === null && !p.down){
+        p.touchId = t.identifier;
+        startDrag(p, t.clientX, t.clientY);
+        return;
+      }
+    }
+  }
+
+  el.canvas.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    Array.prototype.forEach.call(e.changedTouches, assignTouch);
+  }, { passive:false });
+
+  el.canvas.addEventListener('touchmove', function(e){
+    e.preventDefault();
+    Array.prototype.forEach.call(e.changedTouches, function(t){
+      var found = findPlayerByTouch(t.identifier);
+      if(found) continueDrag(found.player, t.clientX, t.clientY);
+    });
+  }, { passive:false });
+
+  function releaseTouch(e){
+    e.preventDefault();
+    Array.prototype.forEach.call(e.changedTouches, function(t){
+      var found = findPlayerByTouch(t.identifier);
+      if(found){
+        found.player.touchId = null;
+        found.player.dragLastX = null;
+        found.player.dragLastY = null;
+      }
+    });
+  }
+  el.canvas.addEventListener('touchend', releaseTouch, { passive:false });
+  el.canvas.addEventListener('touchcancel', releaseTouch, { passive:false });
+
+  window.addEventListener('keydown', function(e){
+    state.keys[e.code] = true;
+    if(e.code === 'Space'){ e.preventDefault(); triggerBomb(0); }
+    if(e.code === 'KeyF'){ triggerBomb(1); }
+  });
+  window.addEventListener('keyup', function(e){ state.keys[e.code] = false; });
+
+  function bombButtonHandler(idx){
+    return function(e){ e.preventDefault(); triggerBomb(idx); };
+  }
+  el.bombBtnP1.addEventListener('click', bombButtonHandler(0));
+  el.bombBtnP1.addEventListener('touchstart', bombButtonHandler(0), { passive:false });
+  el.bombBtnP2.addEventListener('click', bombButtonHandler(1));
+  el.bombBtnP2.addEventListener('touchstart', bombButtonHandler(1), { passive:false });
+
+  /* ---------- 배경(스테이지별 테마) ---------- */
+  // 스테이지가 바뀔 때마다 도시 → 초원 → 바다 → 밤하늘 → 우주 순으로 배경 테마가 바뀌고,
+  // startStage()에서 bgFadeProgress를 0으로 되돌려 이전 테마에서 서서히 crossfade됨
+  var STAGE_THEMES = ['city', 'grassland', 'sea', 'night', 'space'];
+  function themeForStage(s){ return STAGE_THEMES[clamp(s, 1, STAGE_COUNT) - 1]; }
+
+  function initBackgroundDecor(){
+    state.stars = [];
+    for(var i = 0; i < 60; i++){
+      state.stars.push({
+        x: Math.random() * CANVAS_W,
+        y: Math.random() * CANVAS_H * 0.85,
+        r: 0.6 + Math.random() * 1.4,
+        seed: Math.random() * 10
+      });
+    }
+    state.cityBuildings = [];
+    var bx = -20;
+    while(bx < CANVAS_W + 20){
+      var w = 30 + Math.random() * 26;
+      var h = 50 + Math.random() * 130;
+      state.cityBuildings.push({ x:bx, w:w, h:h, shade: Math.random() < 0.5 ? '#4a5568' : '#5c6b7a' });
+      bx += w + 6;
+    }
+    state.nebulas = [
+      { x:CANVAS_W * 0.25, y:CANVAS_H * 0.28, r:95, color:'rgba(150,90,220,0.28)' },
+      { x:CANVAS_W * 0.78, y:CANVAS_H * 0.55, r:115, color:'rgba(80,140,255,0.22)' },
+      { x:CANVAS_W * 0.45, y:CANVAS_H * 0.8, r:85, color:'rgba(255,120,180,0.2)' }
+    ];
+  }
+
+  function drawSkyGradient(top, bottom){
+    var grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    grad.addColorStop(0, top);
+    grad.addColorStop(1, bottom);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  }
+
+  function drawStars(count, twinkle){
+    for(var i = 0; i < state.stars.length && i < count; i++){
+      var s = state.stars[i];
+      ctx.globalAlpha = twinkle ? (0.4 + 0.6 * Math.abs(Math.sin(state.time * 0.001 + s.seed))) : 0.85;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawCityBg(){
+    drawSkyGradient('#8ecfff', '#dff3ff');
+    state.cityBuildings.forEach(function(b){
+      ctx.fillStyle = b.shade;
+      ctx.fillRect(b.x, CANVAS_H - b.h, b.w, b.h);
+    });
+  }
+
+  function drawGrasslandBg(){
+    drawSkyGradient('#8ecfff', '#eaffea');
+    ctx.fillStyle = '#8bc34a';
+    ctx.beginPath();
+    ctx.moveTo(0, CANVAS_H * 0.62);
+    ctx.quadraticCurveTo(CANVAS_W * 0.25, CANVAS_H * 0.52, CANVAS_W * 0.5, CANVAS_H * 0.6);
+    ctx.quadraticCurveTo(CANVAS_W * 0.75, CANVAS_H * 0.68, CANVAS_W, CANVAS_H * 0.58);
+    ctx.lineTo(CANVAS_W, CANVAS_H); ctx.lineTo(0, CANVAS_H); ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#6fa83a';
+    ctx.beginPath();
+    ctx.moveTo(0, CANVAS_H * 0.78);
+    ctx.quadraticCurveTo(CANVAS_W * 0.3, CANVAS_H * 0.7, CANVAS_W * 0.6, CANVAS_H * 0.8);
+    ctx.quadraticCurveTo(CANVAS_W * 0.85, CANVAS_H * 0.86, CANVAS_W, CANVAS_H * 0.76);
+    ctx.lineTo(CANVAS_W, CANVAS_H); ctx.lineTo(0, CANVAS_H); ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawSeaBg(){
+    drawSkyGradient('#5fb7ff', '#bfe9ff');
+    ctx.fillStyle = '#2f8fd6';
+    ctx.fillRect(0, CANVAS_H * 0.55, CANVAS_W, CANVAS_H * 0.45);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 2;
+    for(var row = 0; row < 4; row++){
+      var y = CANVAS_H * 0.6 + row * 26;
+      ctx.beginPath();
+      for(var x = 0; x <= CANVAS_W; x += 20){
+        var yy = y + Math.sin(x * 0.05 + state.time * 0.002 + row) * 4;
+        if(x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function drawNightBg(){
+    drawSkyGradient('#0b1642', '#233a73');
+    drawStars(50, true);
+    ctx.fillStyle = 'rgba(255,250,220,0.9)';
+    ctx.beginPath(); ctx.arc(CANVAS_W * 0.78, CANVAS_H * 0.16, 26, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(11,22,66,0.35)';
+    ctx.beginPath(); ctx.arc(CANVAS_W * 0.78 - 10, CANVAS_H * 0.16 - 4, 24, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawSpaceBg(){
+    drawSkyGradient('#050414', '#1a1030');
+    state.nebulas.forEach(function(n){
+      var g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+      g.addColorStop(0, n.color);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fill();
+    });
+    drawStars(60, false);
+    ctx.fillStyle = '#8d6e63';
+    ctx.beginPath(); ctx.arc(CANVAS_W * 0.2, CANVAS_H * 0.82, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(CANVAS_W * 0.2, CANVAS_H * 0.82, 34, 10, -0.3, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  function drawStageBackground(stageIdx){
+    var theme = themeForStage(stageIdx);
+    if(theme === 'city') drawCityBg();
+    else if(theme === 'grassland') drawGrasslandBg();
+    else if(theme === 'sea') drawSeaBg();
+    else if(theme === 'night') drawNightBg();
+    else drawSpaceBg();
+  }
+
+  function drawBackground(){
+    if(state.bgFadeProgress < 1){
+      drawStageBackground(state.bgFadeFrom);
+      ctx.globalAlpha = state.bgFadeProgress;
+      drawStageBackground(state.bgFadeTo);
+      ctx.globalAlpha = 1;
+    } else {
+      drawStageBackground(state.stage);
+    }
+    var theme = themeForStage(state.stage);
+    if(theme === 'city' || theme === 'grassland' || theme === 'sea') drawClouds();
+  }
+
+  /* ---------- 구름 ---------- */
+  function initClouds(){
+    state.clouds = [];
+    for(var i = 0; i < 9; i++){
+      state.clouds.push({
+        x: Math.random() * CANVAS_W,
+        y: Math.random() * CANVAS_H,
+        scale: 0.6 + Math.random() * 1.1,
+        speed: 8 + Math.random() * 14
+      });
+    }
+  }
+
+  function updateClouds(dt){
+    state.clouds.forEach(function(c){
+      c.y += c.speed * dt;
+      if(c.y > CANVAS_H + 40){ c.y = -40; c.x = Math.random() * CANVAS_W; }
+    });
+  }
+
+  function drawClouds(){
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    state.clouds.forEach(function(c){
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.scale(c.scale, c.scale);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 26, 14, 0, 0, Math.PI * 2);
+      ctx.ellipse(-18, 4, 16, 10, 0, 0, Math.PI * 2);
+      ctx.ellipse(18, 4, 16, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  /* ---------- 적 ---------- */
+  // 배경 테마(도시/초원/바다/밤하늘/우주)에 맞춰 적 색상·강조색이 바뀜.
+  // 도시~바다는 재래식 병기 느낌, 밤하늘은 스텔스 느낌, 우주는 네온이 도는 외계 병기 느낌으로 구성
+  var ENEMY_THEME = {
+    city: {
+      drone: { body:'#ff6b8a' },
+      plane: { bodyTop:'#7a8898', bodyBottom:'#3d4552', wing:'#4a5568', accent:'#ff4d4f', canopy:'rgba(173,216,255,0.9)' },
+      tank:  { body:'#5c940d', turret:'#3f6212' },
+      boss:  { bodyOuter:'#5f3dc4', bodyInner:'#845ef7', fin:'#3b2a86', hpColor:'#ff6b8a' }
+    },
+    grassland: {
+      drone: { body:'#f76707' },
+      plane: { bodyTop:'#8a9a7a', bodyBottom:'#465440', wing:'#57684f', accent:'#ffd43b', canopy:'rgba(173,216,255,0.9)' },
+      tank:  { body:'#4d7c0f', turret:'#365a0a' },
+      boss:  { bodyOuter:'#5c940d', bodyInner:'#74b816', fin:'#3f6212', hpColor:'#ffd43b' }
+    },
+    sea: {
+      drone: { body:'#00b4d8' },
+      plane: { bodyTop:'#6c8ea8', bodyBottom:'#33475b', wing:'#40607a', accent:'#40c9ff', canopy:'rgba(173,216,255,0.9)' },
+      tank:  { body:'#1c7ed6', turret:'#1864ab' },
+      boss:  { bodyOuter:'#1971c2', bodyInner:'#4dabf7', fin:'#0c4a8a', hpColor:'#40c9ff' }
+    },
+    night: {
+      drone: { body:'#845ef7' },
+      plane: { bodyTop:'#495057', bodyBottom:'#212529', wing:'#343a40', accent:'#00f5d4', canopy:'rgba(120,220,255,0.9)' },
+      tank:  { body:'#343a40', turret:'#1a1d21', glow:'#00f5d4' },
+      boss:  { bodyOuter:'#212946', bodyInner:'#3b4c8a', fin:'#141a30', glow:'#00f5d4', hpColor:'#845ef7' }
+    },
+    space: {
+      drone: { body:'#ff2e93', glow:'#ff9fd6' },
+      plane: { bodyTop:'#3a2a6e', bodyBottom:'#1a1030', wing:'#2d1f5c', accent:'#00f5ff', canopy:'rgba(150,255,255,0.9)' },
+      tank:  { body:'#4527a0', turret:'#2c1867', glow:'#00f5ff' },
+      boss:  { bodyOuter:'#3a1c71', bodyInner:'#7b2ff7', fin:'#22103f', glow:'#00f5ff', hpColor:'#00f5ff' }
+    }
+  };
+  function palFor(enemy){ return ENEMY_THEME[enemy.theme || 'city']; }
+
+  function enemyStats(type, s){
+    if(type === 'drone') return { hp:1, r:11, speed:130 + 14 * s, score:50 };
+    if(type === 'plane') return { hp:2 + Math.floor(s / 2), r:15, speed:95 + 10 * s, score:120 };
+    if(type === 'tank')  return { hp:6 + s, r:17, speed:32, score:200 };
+    return { hp:85 + 55 * s, r:48, speed:26, score:3000 }; // boss
+  }
+
+  function stagePool(s){
+    if(s === 1) return ['drone', 'drone', 'plane'];
+    if(s === 2) return ['drone', 'plane', 'plane', 'tank'];
+    if(s === 3) return ['drone', 'drone', 'plane', 'tank', 'tank'];
+    if(s === 4) return ['drone', 'plane', 'plane', 'tank', 'drone'];
+    return ['drone', 'plane', 'tank', 'drone', 'plane', 'tank'];
+  }
+
+  function stageDuration(s){ return 18000 + s * 1500; }
+  function stageSpawnInterval(s){ return Math.max(360, 850 - s * 90); }
+
+  function makeEnemy(type, s, x){
+    var st = enemyStats(type, s);
+    return {
+      type:type, x:x, y:-30, r:st.r, hp:st.hp, maxHp:st.hp, speed:st.speed, score:st.score,
+      vx:(type === 'tank' || type === 'boss') ? (Math.random() < 0.5 ? -1 : 1) * (st.speed + 20) : 0,
+      fireTimer: 500 + Math.random() * 900,
+      wobble: Math.random() * Math.PI * 2,
+      theme: themeForStage(s) // 소환 당시 테마를 저장해, 스테이지 전환 중에도 색이 갑자기 안 바뀌게 함
+    };
+  }
+
+  function spawnRandomEnemy(s){
+    var pool = stagePool(s);
+    var type = pool[Math.floor(Math.random() * pool.length)];
+    var x = 30 + Math.random() * (CANVAS_W - 60);
+    state.enemies.push(makeEnemy(type, s, x));
+  }
+
+  function spawnBoss(){
+    var boss = makeEnemy('boss', state.stage, CANVAS_W / 2);
+    state.boss = boss;
+    state.enemies.push(boss);
+  }
+
+  function nearestAlivePlayer(x, y){
+    var best = null, bestD = Infinity;
+    state.players.forEach(function(p){
+      if(p.down) return;
+      var d = dist2(x, y, p.x, p.y);
+      if(d < bestD){ bestD = d; best = p; }
+    });
+    return best;
+  }
+
+  function enemyFire(e){
+    var target = nearestAlivePlayer(e.x, e.y);
+    if(!target) return;
+    if(e.type === 'plane'){
+      var ang = Math.atan2(target.y - e.y, target.x - e.x);
+      state.enemyBullets.push({ x:e.x, y:e.y, vx:Math.cos(ang) * 210, vy:Math.sin(ang) * 210, r:4 });
+    } else if(e.type === 'tank'){
+      state.enemyBullets.push({ x:e.x, y:e.y, vx:0, vy:190, r:4 });
+    } else if(e.type === 'boss'){
+      for(var i = -2; i <= 2; i++){
+        var a = Math.PI / 2 + i * 0.22;
+        state.enemyBullets.push({ x:e.x, y:e.y + e.r * 0.5, vx:Math.cos(a) * 160, vy:Math.sin(a) * 160, r:5 });
+      }
+    }
+  }
+
+  function updateEnemies(dt){
+    state.enemies.forEach(function(e){
+      if(e.type === 'drone'){
+        e.y += e.speed * dt;
+        e.x += Math.sin(state.time * 0.006 + e.wobble) * 70 * dt;
+        e.x = clamp(e.x, e.r, CANVAS_W - e.r);
+      } else if(e.type === 'plane'){
+        e.y += e.speed * dt;
+        var target = nearestAlivePlayer(e.x, e.y);
+        if(target){
+          var diff = target.x - e.x;
+          e.x += clamp(diff, -e.speed * 0.4 * dt, e.speed * 0.4 * dt);
+        }
+      } else if(e.type === 'tank'){
+        var patrolY = CANVAS_H * 0.62;
+        if(e.y < patrolY){
+          e.y += e.speed * 2.2 * dt;
+        } else {
+          e.y = patrolY;
+          e.x += e.vx * dt;
+          if(e.x < 24 || e.x > CANVAS_W - 24) e.vx *= -1;
+        }
+      } else if(e.type === 'boss'){
+        var bossY = 92;
+        if(e.y < bossY){
+          e.y += 40 * dt;
+        } else {
+          e.y = bossY;
+          e.x += e.vx * dt;
+          if(e.x < e.r + 10 || e.x > CANVAS_W - e.r - 10) e.vx *= -1;
+        }
+      }
+
+      if(e.type !== 'drone'){
+        e.fireTimer -= dt * 1000;
+        if(e.fireTimer <= 0){
+          enemyFire(e);
+          e.fireTimer = e.type === 'boss' ? 800 : (e.type === 'tank' ? 1100 : 1300);
+        }
+      }
+    });
+  }
+
+  function killEnemy(enemy){
+    state.score += enemy.score;
+    spawnParticles(enemy.x, enemy.y, '#ffd43b');
+    removeFromArray(state.enemies, enemy);
+    if(enemy === state.boss){
+      state.boss = null;
+      onStageClear();
+    } else if(Math.random() < ITEM_DROP_CHANCE){
+      state.items.push({ x:enemy.x, y:enemy.y, r:9, vy:60 });
+    }
+  }
+
+  /* ---------- 스테이지 진행 ---------- */
+  function startStage(s){
+    state.bgFadeFrom = state.stage;
+    state.bgFadeTo = s;
+    state.bgFadeProgress = 0;
+    state.stage = s;
+    state.stagePhase = 'wave';
+    state.stageTimer = 0;
+    state.spawnTimer = 0;
+    state.boss = null;
+  }
+
+  function onStageClear(){
+    state.stagePhase = 'clear';
+    state.bannerTimer = 1800;
+    state.bannerText = '🎉 STAGE ' + state.stage + ' CLEAR!';
+    state.players.forEach(function(p){ if(!p.down) p.bombs = Math.min(5, p.bombs + 1); });
+  }
+
+  function updateStagePhase(dt){
+    if(state.stagePhase === 'wave'){
+      state.stageTimer += dt * 1000;
+      state.spawnTimer -= dt * 1000;
+      if(state.spawnTimer <= 0){
+        spawnRandomEnemy(state.stage);
+        state.spawnTimer = stageSpawnInterval(state.stage);
+      }
+      if(state.stageTimer >= stageDuration(state.stage)){
+        state.stagePhase = 'bossWarning';
+        state.bannerTimer = 1600;
+        state.bannerText = '⚠️ 보스 출현!';
+      }
+    } else if(state.stagePhase === 'bossWarning'){
+      state.bannerTimer -= dt * 1000;
+      if(state.bannerTimer <= 0){
+        spawnBoss();
+        state.stagePhase = 'boss';
+      }
+    } else if(state.stagePhase === 'clear'){
+      state.bannerTimer -= dt * 1000;
+      if(state.bannerTimer <= 0){
+        if(state.stage >= STAGE_COUNT) endGame(true);
+        else startStage(state.stage + 1);
+      }
+    } else if(state.stagePhase === 'gameover'){
+      state.bannerTimer -= dt * 1000;
+      if(state.bannerTimer <= 0) endGame(false);
+    }
+  }
+
+  /* ---------- 탄환/아이템/파티클 ---------- */
+  function updateBullets(dt){
+    state.bullets.forEach(function(b){ b.x += b.vx * dt; b.y += b.vy * dt; });
+    state.bullets = state.bullets.filter(function(b){
+      return b.y > -20 && b.y < CANVAS_H + 20 && b.x > -20 && b.x < CANVAS_W + 20;
+    });
+  }
+
+  function updateEnemyBullets(dt){
+    state.enemyBullets.forEach(function(b){ b.x += b.vx * dt; b.y += b.vy * dt; });
+    state.enemyBullets = state.enemyBullets.filter(function(b){
+      return b.y > -20 && b.y < CANVAS_H + 20 && b.x > -20 && b.x < CANVAS_W + 20;
+    });
+  }
+
+  function updateItems(dt){
+    state.items.forEach(function(it){ it.y += it.vy * dt; });
+    state.items = state.items.filter(function(it){ return it.y < CANVAS_H + 20; });
+  }
+
+  function spawnParticles(x, y, color){
+    for(var i = 0; i < 8; i++){
+      var ang = Math.random() * Math.PI * 2, spd = 40 + Math.random() * 90;
+      state.particles.push({ x:x, y:y, vx:Math.cos(ang) * spd, vy:Math.sin(ang) * spd, life:400, maxLife:400, color:color });
+    }
+  }
+
+  function updateParticles(dt){
+    state.particles.forEach(function(p){ p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * 1000; });
+    state.particles = state.particles.filter(function(p){ return p.life > 0; });
+  }
+
+  /* ---------- 충돌 판정 ---------- */
+  function checkCollisions(){
+    // 플레이어 총알 vs 적
+    for(var i = state.bullets.length - 1; i >= 0; i--){
+      var b = state.bullets[i];
+      for(var j = state.enemies.length - 1; j >= 0; j--){
+        var e = state.enemies[j];
+        if(circleHit(b.x, b.y, b.r, e.x, e.y, e.r)){
+          e.hp -= b.dmg;
+          state.bullets.splice(i, 1);
+          if(e.hp <= 0) killEnemy(e);
+          break;
+        }
+      }
+    }
+    // 적 총알 vs 플레이어
+    for(var k = state.enemyBullets.length - 1; k >= 0; k--){
+      var eb = state.enemyBullets[k];
+      var target = state.players.find(function(p){
+        return !p.down && p.invincible <= 0 && circleHit(eb.x, eb.y, eb.r, p.x, p.y, p.r);
+      });
+      if(target){
+        hitPlayer(target);
+        state.enemyBullets.splice(k, 1);
+      }
+    }
+    // 적(접촉) vs 플레이어
+    state.players.forEach(function(p){
+      if(p.down || p.invincible > 0) return;
+      for(var m = state.enemies.length - 1; m >= 0; m--){
+        var en = state.enemies[m];
+        if(circleHit(p.x, p.y, p.r, en.x, en.y, en.r)){
+          hitPlayer(p);
+          if(en.type === 'drone'){ killEnemy(en); }
+          break;
+        }
+      }
+    });
+    // 아이템 vs 플레이어
+    for(var n = state.items.length - 1; n >= 0; n--){
+      var it = state.items[n];
+      var picked = state.players.find(function(p){ return !p.down && circleHit(it.x, it.y, it.r, p.x, p.y, p.r); });
+      if(picked){
+        applyItem(picked);
+        state.items.splice(n, 1);
+      }
+    }
+  }
+
+  /* ---------- HUD ---------- */
+  function hudLine(p){
+    if(p.down) return 'P' + p.id + ' 아웃';
+    return 'P' + p.id + '  🔁생명 ' + p.lives + '  ⚔무기Lv.' + p.weaponLevel +
+      '\n💣폭탄 ' + p.bombs;
+  }
+  function updateHud(){
+    el.hudP1.textContent = 'STAGE ' + state.stage + '/' + STAGE_COUNT + ' · ' + state.score + '점\n' + hudLine(state.players[0]);
+    if(state.mode === 'coop' && state.players[1]){
+      el.hudP2.textContent = hudLine(state.players[1]);
+    }
+  }
+
+  /* ---------- 그리기 ---------- */
+  function drawPlayers(){
+    state.players.forEach(function(p){
+      if(p.down) return;
+      if(p.invincible > 0 && Math.floor(state.time / 80) % 2 === 0) return;
+      var r = p.r;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      // 엔진 화염(꼬리, 이동 방향 반대인 아래쪽)
+      ctx.fillStyle = 'rgba(255,166,0,0.75)';
+      ctx.beginPath(); ctx.ellipse(0, r * 1.05, r * 0.16, r * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+      // 스윕백 날개
+      ctx.fillStyle = p.colorDark;
+      ctx.beginPath();
+      ctx.moveTo(r * 0.15, r * 0.1); ctx.lineTo(r * 1.25, r * 0.7); ctx.lineTo(r * 0.5, -r * 0.05);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.15, r * 0.1); ctx.lineTo(-r * 1.25, r * 0.7); ctx.lineTo(-r * 0.5, -r * 0.05);
+      ctx.closePath(); ctx.fill();
+      // 동체(그라데이션 셰이딩)
+      var bodyGrad = ctx.createLinearGradient(0, -r * 1.3, 0, r * 1.1);
+      bodyGrad.addColorStop(0, p.color);
+      bodyGrad.addColorStop(1, p.colorDark);
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 1.3);
+      ctx.lineTo(r * 0.3, r * 0.2);
+      ctx.lineTo(r * 0.18, r * 1.0);
+      ctx.lineTo(-r * 0.18, r * 1.0);
+      ctx.lineTo(-r * 0.3, r * 0.2);
+      ctx.closePath();
+      ctx.fill();
+      // 캐노피
+      ctx.fillStyle = 'rgba(200,235,255,0.9)';
+      ctx.beginPath(); ctx.ellipse(0, -r * 0.35, r * 0.18, r * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function drawBullets(){
+    state.bullets.forEach(function(b){
+      var owner = state.players[b.owner - 1];
+      ctx.fillStyle = owner && owner.id === 2 ? '#ff922b' : '#4dabf7';
+      if(owner && owner.id === 2){
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillRect(-3, -3, 6, 6);
+        ctx.restore();
+      } else {
+        ctx.fillRect(b.x - 2, b.y - 6, 4, 10);
+      }
+    });
+  }
+
+  function drawEnemyBullets(){
+    ctx.fillStyle = '#ff4d4f';
+    state.enemyBullets.forEach(function(b){
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function drawDrone(e, pal){
+    if(pal.glow){ ctx.save(); ctx.shadowColor = pal.glow; ctx.shadowBlur = 10; }
+    ctx.fillStyle = pal.body;
+    ctx.beginPath();
+    ctx.moveTo(0, -e.r); ctx.lineTo(e.r, 0); ctx.lineTo(0, e.r); ctx.lineTo(-e.r, 0);
+    ctx.closePath(); ctx.fill();
+    if(pal.glow) ctx.restore();
+  }
+
+  function drawPlaneEnemy(e, pal){
+    var pr = e.r;
+    // 엔진 화염(동체 뒤쪽, 이동 방향 반대편)
+    ctx.fillStyle = 'rgba(255,166,0,0.65)';
+    ctx.beginPath(); ctx.ellipse(0, -pr * 0.95, pr * 0.14, pr * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+    // 스윕백 날개
+    ctx.fillStyle = pal.wing;
+    ctx.beginPath();
+    ctx.moveTo(pr * 0.15, -pr * 0.1); ctx.lineTo(pr * 1.15, -pr * 0.65); ctx.lineTo(pr * 0.55, pr * 0.15);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-pr * 0.15, -pr * 0.1); ctx.lineTo(-pr * 1.15, -pr * 0.65); ctx.lineTo(-pr * 0.55, pr * 0.15);
+    ctx.closePath(); ctx.fill();
+    // 동체(그라데이션 셰이딩)
+    var bodyGrad = ctx.createLinearGradient(0, -pr, 0, pr);
+    bodyGrad.addColorStop(0, pal.bodyTop);
+    bodyGrad.addColorStop(1, pal.bodyBottom);
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, pr * 1.1);
+    ctx.lineTo(pr * 0.32, pr * 0.1);
+    ctx.lineTo(pr * 0.2, -pr * 0.9);
+    ctx.lineTo(-pr * 0.2, -pr * 0.9);
+    ctx.lineTo(-pr * 0.32, pr * 0.1);
+    ctx.closePath();
+    ctx.fill();
+    // 포인트 컬러 라인
+    ctx.strokeStyle = pal.accent; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(0, pr * 0.85); ctx.lineTo(0, -pr * 0.55); ctx.stroke();
+    // 캐노피
+    ctx.fillStyle = pal.canopy;
+    ctx.beginPath(); ctx.ellipse(0, -pr * 0.35, pr * 0.16, pr * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawTankEnemy(e, pal){
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.ellipse(0, e.r * 0.9, e.r * 1.1, e.r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = pal.body;
+    ctx.fillRect(-e.r, -e.r * 0.5, e.r * 2, e.r);
+    ctx.fillStyle = pal.turret;
+    ctx.beginPath(); ctx.arc(0, -e.r * 0.5, e.r * 0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(-3, -e.r * 1.3, 6, e.r * 0.8);
+    if(pal.glow){
+      ctx.fillStyle = pal.glow;
+      ctx.beginPath(); ctx.arc(0, -e.r * 0.5, e.r * 0.15, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawBossEnemy(e, pal){
+    ctx.fillStyle = pal.bodyOuter;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, e.r * 1.3, e.r * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = pal.bodyInner;
+    ctx.beginPath(); ctx.ellipse(0, -e.r * 0.15, e.r * 0.8, e.r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = pal.fin;
+    ctx.beginPath(); ctx.moveTo(-e.r * 1.3, 0); ctx.lineTo(-e.r * 1.7, -e.r * 0.3); ctx.lineTo(-e.r * 1.7, e.r * 0.3); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(e.r * 1.3, 0); ctx.lineTo(e.r * 1.7, -e.r * 0.3); ctx.lineTo(e.r * 1.7, e.r * 0.3); ctx.closePath(); ctx.fill();
+    if(pal.glow){
+      ctx.fillStyle = pal.glow;
+      ctx.beginPath(); ctx.arc(0, 0, e.r * 0.2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawEnemies(){
+    state.enemies.forEach(function(e){
+      var pal = palFor(e);
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      if(e.type === 'drone') drawDrone(e, pal.drone);
+      else if(e.type === 'plane') drawPlaneEnemy(e, pal.plane);
+      else if(e.type === 'tank') drawTankEnemy(e, pal.tank);
+      else if(e.type === 'boss') drawBossEnemy(e, pal.boss);
+      ctx.restore();
+    });
+
+    if(state.boss){
+      var bossPal = palFor(state.boss).boss;
+      var w = 240, x = (CANVAS_W - w) / 2, y = 16;
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(x, y, w, 10);
+      ctx.fillStyle = bossPal.hpColor;
+      ctx.fillRect(x, y, w * Math.max(0, state.boss.hp / state.boss.maxHp), 10);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(x, y, w, 10);
+    }
+  }
+
+  function drawItems(){
+    state.items.forEach(function(it){
+      ctx.save();
+      ctx.translate(it.x, it.y);
+      ctx.rotate(state.time * 0.003);
+      ctx.fillStyle = '#ffd43b';
+      ctx.beginPath();
+      for(var i = 0; i < 5; i++){
+        var a = (Math.PI * 2 / 5) * i - Math.PI / 2;
+        var px = Math.cos(a) * it.r, py = Math.sin(a) * it.r;
+        if(i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function drawParticles(){
+    state.particles.forEach(function(p){
+      ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function drawBanner(){
+    if(state.bannerTimer <= 0 || !state.bannerText) return;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(0, CANVAS_H / 2 - 30, CANVAS_W, 60);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 22px "Malgun Gothic", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(state.bannerText, CANVAS_W / 2, CANVAS_H / 2);
+  }
+
+  function draw(){
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    drawBackground();
+    drawItems();
+    drawEnemyBullets();
+    drawEnemies();
+    drawPlayers();
+    drawBullets();
+    drawParticles();
+    drawBombEffects();
+    drawBanner();
+  }
+
+  /* ---------- 메인 루프 ---------- */
+  function update(dt){
+    state.time += dt * 1000;
+    if(state.bgFadeProgress < 1) state.bgFadeProgress = Math.min(1, state.bgFadeProgress + dt / 2);
+    updateClouds(dt);
+    updatePlayers(dt);
+    updateStagePhase(dt);
+    updateEnemies(dt);
+    updateBullets(dt);
+    updateEnemyBullets(dt);
+    updateItems(dt);
+    updateParticles(dt);
+    updateBombEffects(dt);
+    checkCollisions();
+    updateHud();
+  }
+
+  function loop(ts){
+    if(!state.running) return;
+    var dt = Math.min(0.05, (ts - state.lastTime) / 1000 || 0);
+    state.lastTime = ts;
+    update(dt);
+    draw();
+    state.rafId = requestAnimationFrame(loop);
+  }
+
+  function stopLoop(){
+    state.running = false;
+    if(state.rafId) cancelAnimationFrame(state.rafId);
+    state.rafId = null;
+  }
+
+  /* ---------- 게임 시작/종료 ---------- */
+  function startGame(){
+    state.players = [createPlayer(1, state.mode)];
+    if(state.mode === 'coop') state.players.push(createPlayer(2, state.mode));
+
+    state.bullets = [];
+    state.enemyBullets = [];
+    state.enemies = [];
+    state.items = [];
+    state.particles = [];
+    state.bombEffects = [];
+    state.screenFlash = 0;
+    state.score = 0;
+    state.time = 0;
+    state.keys = {};
+
+    initClouds();
+    initBackgroundDecor();
+    startStage(1);
+    state.bgFadeProgress = 1; // 게임을 처음 시작할 때는 전환 없이 바로 첫 스테이지 배경 표시
+
+    el.hudP2.classList.toggle('hidden', state.mode !== 'coop');
+    el.bombBtnP2.classList.toggle('hidden', state.mode !== 'coop');
+
+    showScreen('play');
+
+    state.running = true;
+    state.lastTime = performance.now();
+    state.rafId = requestAnimationFrame(loop);
+  }
+
+  function endGame(victory){
+    stopLoop();
+    el.resultBtns.classList.remove('hidden');
+    el.endedMsg.classList.add('hidden');
+    el.resultEmoji.textContent = victory ? '🏆' : '💥';
+    el.resultText.textContent = victory ? '5개 스테이지를 모두 클리어했습니다!' : '게임 오버';
+    el.resultStats.textContent = '최종 점수 ' + state.score + '점 · 스테이지 ' + state.stage + '/' + STAGE_COUNT;
+    showScreen('result');
+  }
+
+  el.btnReplay.addEventListener('click', startGame);
+  el.btnBackMenu.addEventListener('click', backToMenu);
+
+  el.btnQuit.addEventListener('click', function(){
+    el.resultBtns.classList.add('hidden');
+    el.endedMsg.classList.remove('hidden');
+  });
+  el.btnNewGame.addEventListener('click', backToMenu);
+
+  /* ---------- 초기 화면 ---------- */
+  showScreen('menu');
+
+})();
+</script>
+</body>
+</html>

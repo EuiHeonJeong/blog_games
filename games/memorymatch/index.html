@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>기억력 카드 매칭</title>
+<style>
+  :root{
+    --pink:#ff6b57;
+    --pink-dark:#e14f32;
+    --blue:#3da5ff;
+    --blue-dark:#1c86e0;
+    --purple:#2bc48a;
+    --purple-dark:#1e9c6c;
+    --bg:#fff6e9;
+    --card:#ffffff;
+    --text:#23272f;
+    --sub:#868e96;
+    --line:#e9ecef;
+    --win:#ffd43b;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0; width:100%; min-height:100%;
+    background:var(--bg);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    color:var(--text);
+    -webkit-text-size-adjust:100%;
+  }
+  #app{
+    max-width:480px;
+    min-width:280px;
+    margin:0 auto;
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  @media (min-width:700px){
+    #app{ max-width:640px; padding:20px; }
+  }
+  @media (min-width:1024px){
+    #app{ max-width:860px; padding:24px; }
+  }
+  header{ text-align:center; padding:6px 4px 2px; }
+  header h1{ margin:0 0 4px; font-size:1.4rem; color:var(--pink-dark); }
+  header p{ margin:0; font-size:0.85rem; color:var(--sub); word-break:keep-all; }
+
+  .ad-slot{
+    width:100%;
+    min-height:50px;
+    border:2px dashed #ced4da;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.75rem;
+    color:#adb5bd;
+    background:#ffffff;
+  }
+
+  .card{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+  }
+
+  /* 모드 선택 */
+  .mode-btn{
+    width:100%;
+    padding:14px;
+    margin-bottom:10px;
+    border:none;
+    border-radius:10px;
+    font-size:1rem;
+    font-weight:bold;
+    cursor:pointer;
+    background:var(--pink);
+    color:#fff;
+    transition:transform .08s ease, box-shadow .08s ease, opacity .15s ease;
+    box-shadow:0 4px 0 var(--pink-dark);
+  }
+  .mode-btn:active{ transform:translateY(4px); box-shadow:0 0 0 var(--pink-dark); }
+  .mode-btn.secondary{ background:var(--blue); box-shadow:0 4px 0 var(--blue-dark); }
+  .mode-btn.secondary:active{ box-shadow:0 0 0 var(--blue-dark); }
+  .mode-btn.dimmed{ opacity:0.45; }
+
+  /* 난이도 선택 화면 */
+  .diff-title{ font-size:0.85rem; color:var(--sub); margin:14px 0 8px; text-align:center; }
+  .diff-options{ display:flex; gap:8px; margin-bottom:14px; }
+  .diff-option{
+    flex:1;
+    padding:12px 4px;
+    border-radius:8px;
+    border:2px solid var(--line);
+    background:#fff;
+    font-size:0.85rem;
+    color:var(--text);
+    cursor:pointer;
+    text-align:center;
+  }
+  .diff-option .diff-sub{ display:block; font-size:0.7rem; color:var(--sub); margin-top:2px; }
+  .diff-option.selected{ border-color:var(--pink-dark); background:#fff1ee; color:var(--pink-dark); font-weight:bold; }
+  .diff-option.selected .diff-sub{ color:var(--pink-dark); }
+
+  .howto{
+    margin-top:14px;
+    padding:12px;
+    background:#f1f3f5;
+    border-radius:8px;
+    font-size:0.8rem;
+    color:var(--sub);
+    line-height:1.6;
+  }
+  .howto b{ color:var(--text); }
+
+  .start-btn{
+    width:100%;
+    margin-top:14px;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    font-size:1.05rem;
+    font-weight:bold;
+    color:#fff;
+    background:var(--purple);
+    box-shadow:0 4px 0 var(--purple-dark);
+    cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .start-btn:active{ transform:translateY(4px); box-shadow:0 0 0 var(--purple-dark); }
+  .start-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  /* 게임 플레이 화면 */
+  .scoreboard{
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    padding:10px 6px;
+    background:#f1f3f5;
+    border-radius:8px;
+    margin-bottom:10px;
+    font-size:0.85rem;
+  }
+  .score-item{ text-align:center; padding:4px 10px; border-radius:8px; transition:background-color .2s ease, box-shadow .2s ease; }
+  .score-item .label{ color:var(--sub); font-size:0.75rem; }
+  .score-item .value{ font-size:1.1rem; font-weight:bold; color:var(--pink-dark); }
+  .score-item.p2 .value{ color:var(--blue-dark); }
+  .score-item.active{ background:#fff1ee; box-shadow:0 0 0 2px var(--pink-dark) inset; }
+  .score-item.p2.active{ background:#eaf4ff; box-shadow:0 0 0 2px var(--blue-dark) inset; }
+
+  .board{
+    display:grid;
+    grid-template-columns:repeat(var(--cols, 4), 96px);
+    justify-content:center;
+    gap:8px;
+    width:100%;
+  }
+  .cell{
+    -webkit-appearance:none;
+    appearance:none;
+    margin:0;
+    padding:0;
+    border:none;
+    background:none;
+    cursor:pointer;
+    aspect-ratio:3/4;
+    perspective:600px;
+  }
+  .cell-inner{
+    position:relative;
+    width:100%;
+    height:100%;
+    transition:transform .35s ease;
+    transform-style:preserve-3d;
+  }
+  .cell.flipped .cell-inner, .cell.matched .cell-inner{ transform:rotateY(180deg); }
+  .cell-face{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:8px;
+    overflow:hidden;
+    backface-visibility:hidden;
+  }
+  .cell-back{
+    background:var(--blue);
+  }
+  .cell-back svg{ width:100%; height:100%; display:block; }
+  .cell-front{
+    background:#fff1ee;
+    border:2px solid var(--line);
+    transform:rotateY(180deg);
+    padding:6%;
+  }
+  .cell-front svg{ width:100%; height:100%; }
+  .cell.matched .cell-front{ background:var(--win); border-color:#f2b705; }
+  .cell:disabled{ cursor:default; }
+
+  .in-game-controls{
+    display:flex;
+    justify-content:center;
+    margin-top:14px;
+  }
+  .link-btn{
+    background:none;
+    border:none;
+    color:var(--sub);
+    font-size:0.8rem;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+
+  /* 결과 화면 */
+  .result-emoji{ text-align:center; font-size:2.4rem; margin-bottom:6px; }
+  .result-text{ text-align:center; font-size:1.15rem; font-weight:bold; margin-bottom:6px; }
+  .result-stats{ text-align:center; font-size:0.9rem; color:var(--sub); margin-bottom:14px; }
+
+  .result-cards{ display:flex; gap:10px; margin-bottom:18px; }
+  .result-player-block{ flex:1; background:#f8f9fa; border-radius:10px; padding:10px 8px; }
+  .result-player-block .rpc-label{ text-align:center; font-size:0.8rem; font-weight:bold; margin-bottom:8px; color:var(--pink-dark); }
+  .result-player-block.p2 .rpc-label{ color:var(--blue-dark); }
+  .rpc-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:4px; }
+  .rpc-item{ aspect-ratio:1/1; background:#fff; border:1px solid var(--line); border-radius:6px; padding:8%; }
+  .rpc-item svg{ width:100%; height:100%; }
+  .rpc-empty{ text-align:center; font-size:0.75rem; color:var(--sub); padding:10px 0; }
+
+  .result-btns{ display:flex; flex-direction:column; gap:10px; }
+  .result-btns button{
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    font-size:0.95rem;
+    font-weight:bold;
+    cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .btn-replay{ background:var(--pink); color:#fff; box-shadow:0 4px 0 var(--pink-dark); }
+  .btn-replay:active{ transform:translateY(4px); box-shadow:0 0 0 var(--pink-dark); }
+  .btn-mode{ background:var(--blue); color:#fff; box-shadow:0 4px 0 var(--blue-dark); }
+  .btn-mode:active{ transform:translateY(4px); box-shadow:0 0 0 var(--blue-dark); }
+  .btn-quit{ background:#f1f3f5; color:var(--sub); box-shadow:0 4px 0 var(--line); }
+  .btn-quit:active{ transform:translateY(4px); box-shadow:0 0 0 var(--line); }
+
+  .ended-msg{ text-align:center; font-size:0.95rem; color:var(--sub); padding:20px 0; }
+
+  .home-link{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    width:fit-content;
+    margin:0 auto 16px;
+    padding:8px 16px;
+    border-radius:999px;
+    background:#fff;
+    border:2px solid var(--line);
+    color:var(--pink-dark);
+    font-size:0.85rem;
+    font-weight:bold;
+    text-decoration:none;
+    box-shadow:0 3px 0 var(--line);
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .home-link:active{ transform:translateY(3px); box-shadow:0 0 0 var(--line); }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>기억력 카드 매칭</h1>
+    <p>카드를 뒤집어 짝을 맞춰보세요! 혼자서 기록에 도전하거나 친구와 대결해보세요</p>
+  </header>
+
+  <div class="ad-slot" id="ad-slot-top">여기에 광고 영역</div>
+
+  <!-- 모드/난이도 선택 화면 -->
+  <section class="card" id="screen-menu">
+    <a class="home-link" href="../../index.html">🏠 홈으로</a>
+    <button class="mode-btn" id="btn-mode-solo" type="button">1인 플레이 (기록 도전)</button>
+    <button class="mode-btn secondary" id="btn-mode-versus" type="button">로컬 2인 대전</button>
+
+    <div class="diff-title">난이도 선택</div>
+    <div class="diff-options" id="diff-options">
+      <div class="diff-option selected" data-diff="easy">쉬움<span class="diff-sub">6쌍</span></div>
+      <div class="diff-option" data-diff="normal">보통<span class="diff-sub">10쌍</span></div>
+      <div class="diff-option" data-diff="hard">어려움<span class="diff-sub">14쌍</span></div>
+    </div>
+
+    <div class="howto" id="howto-text">
+      <b>조작 방법</b><br>
+      카드를 탭(터치) 또는 클릭해 뒤집습니다.<br>
+      두 장이 같은 캐릭터면 그대로 맞춰지고, 다르면 다시 뒤집힙니다.<br>
+      <span id="howto-mode">모든 짝을 맞추면 게임이 끝나요!</span>
+    </div>
+
+    <button class="start-btn" id="btn-start" type="button" disabled>모드를 선택하세요</button>
+  </section>
+
+  <!-- 게임 플레이 화면 -->
+  <section class="card hidden" id="screen-play">
+    <div class="scoreboard" id="scoreboard-solo">
+      <div class="score-item">
+        <div class="label">시도 횟수</div>
+        <div class="value" id="stat-moves">0</div>
+      </div>
+      <div class="score-item">
+        <div class="label">경과 시간</div>
+        <div class="value" id="stat-time">00:00</div>
+      </div>
+      <div class="score-item">
+        <div class="label">맞춘 짝</div>
+        <div class="value" id="stat-pairs">0/0</div>
+      </div>
+    </div>
+
+    <div class="scoreboard hidden" id="scoreboard-versus">
+      <div class="score-item" id="score-item-p1">
+        <div class="label">Player 1</div>
+        <div class="value" id="score-p1">0</div>
+      </div>
+      <div class="score-item">
+        <div class="label">맞춘 짝</div>
+        <div class="value" id="stat-pairs-versus">0/0</div>
+      </div>
+      <div class="score-item p2" id="score-item-p2">
+        <div class="label">Player 2</div>
+        <div class="value" id="score-p2">0</div>
+      </div>
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="in-game-controls">
+      <button class="link-btn" id="btn-give-up" type="button">모드 다시 선택</button>
+    </div>
+  </section>
+
+  <!-- 결과 화면 -->
+  <section class="card hidden" id="screen-result">
+    <a class="home-link" href="../../index.html">🏠 홈으로</a>
+    <div class="result-emoji" id="result-emoji">🎉</div>
+    <div class="result-text" id="result-text">모두 맞췄습니다!</div>
+    <div class="result-stats" id="result-stats"></div>
+    <div class="result-cards hidden" id="result-cards">
+      <div class="result-player-block" id="result-block-p1">
+        <div class="rpc-label">Player 1이 맞춘 카드</div>
+        <div class="rpc-grid" id="rpc-p1"></div>
+      </div>
+      <div class="result-player-block p2" id="result-block-p2">
+        <div class="rpc-label">Player 2가 맞춘 카드</div>
+        <div class="rpc-grid" id="rpc-p2"></div>
+      </div>
+    </div>
+    <div class="result-btns" id="result-btns">
+      <button class="btn-replay" id="btn-replay" type="button">다시하기</button>
+      <button class="btn-mode" id="btn-back-menu" type="button">모드 다시 선택</button>
+      <button class="btn-quit" id="btn-quit" type="button">그만하기</button>
+    </div>
+    <div class="ended-msg hidden" id="ended-msg">
+      플레이해주셔서 감사합니다 🙂<br>
+      <button class="link-btn" id="btn-new-game" type="button">새 게임 시작</button>
+    </div>
+  </section>
+
+  <div class="ad-slot" id="ad-slot-bottom">여기에 광고 영역</div>
+
+</div>
+
+<script>
+(function(){
+
+  /* ---------- 상태 값 ---------- */
+  // 난이도별 쌍 개수. 카드 열 수는 고정하지 않고 .board의 auto-fill 그리드가
+  // 화면 폭(모바일/태블릿/PC)에 맞춰 알아서 정함
+  var DIFF_CONFIG = {
+    easy:   { pairs:6 },
+    normal: { pairs:10 },
+    hard:   { pairs:14 }
+  };
+
+  // 카드 앞면에 쓰이는 귀여운 일러스트 (전부 인라인 SVG라 외부 이미지 파일이 필요 없음)
+  // 실제 포켓몬 등 원작 캐릭터는 저작권/상표 문제가 있어 사용하지 않고,
+  // 도깨비/동물/과일/꽃/도형/속성 몬스터 등 자체 제작한 오리지널 디자인만 사용함.
+  // 한 판 안에서는 테마가 섞이지 않도록 THEMES에 테마별로 10종씩(최고 난이도 기준) 묶어 둠
+  function flowerSVG(petal, center){
+    return '<svg viewBox="0 0 100 100">' +
+      '<ellipse cx="50" cy="26" rx="13" ry="20" fill="' + petal + '" transform="rotate(0 50 50)"/>' +
+      '<ellipse cx="50" cy="26" rx="13" ry="20" fill="' + petal + '" transform="rotate(72 50 50)"/>' +
+      '<ellipse cx="50" cy="26" rx="13" ry="20" fill="' + petal + '" transform="rotate(144 50 50)"/>' +
+      '<ellipse cx="50" cy="26" rx="13" ry="20" fill="' + petal + '" transform="rotate(216 50 50)"/>' +
+      '<ellipse cx="50" cy="26" rx="13" ry="20" fill="' + petal + '" transform="rotate(288 50 50)"/>' +
+      '<circle cx="50" cy="50" r="15" fill="' + center + '"/>' +
+      '<circle cx="46" cy="47" r="2" fill="#343a40"/><circle cx="54" cy="47" r="2" fill="#343a40"/>' +
+      '<path d="M46 53 Q50 56 54 53" stroke="#343a40" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+    '</svg>';
+  }
+
+  function dokkaebiSVG(color){
+    return '<svg viewBox="0 0 100 100"><path d="M38 14 L44 30 L32 28 Z" fill="#495057"/><path d="M62 14 L56 30 L68 28 Z" fill="#495057"/><circle cx="50" cy="58" r="34" fill="' + color + '"/><path d="M30 40 Q40 32 50 40" stroke="#495057" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M70 40 Q60 32 50 40" stroke="#495057" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="38" cy="54" r="6" fill="#fff"/><circle cx="62" cy="54" r="6" fill="#fff"/><circle cx="38" cy="55" r="3" fill="#343a40"/><circle cx="62" cy="55" r="3" fill="#343a40"/><path d="M40 72 Q50 80 60 72" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M45 72 L44 78" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><path d="M55 72 L56 78" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>';
+  }
+
+  var THEMES = {
+    dokkaebi: [
+      dokkaebiSVG('#ff6b6b'), dokkaebiSVG('#4dabf7'), dokkaebiSVG('#51cf66'), dokkaebiSVG('#ffd43b'), dokkaebiSVG('#9775fa'),
+      dokkaebiSVG('#ff922b'), dokkaebiSVG('#ff8fa3'), dokkaebiSVG('#20c997'), dokkaebiSVG('#a9764f'), dokkaebiSVG('#868e96'),
+      dokkaebiSVG('#5c940d'), dokkaebiSVG('#1864ab'), dokkaebiSVG('#c2255c'), dokkaebiSVG('#7048e8')
+    ],
+    animal: [
+      // 고양이
+      '<svg viewBox="0 0 100 100"><path d="M18 32 L26 6 L36 30 Z" fill="#ff9eb5"/><path d="M82 32 L74 6 L64 30 Z" fill="#ff9eb5"/><circle cx="50" cy="56" r="36" fill="#ffb3c6"/><circle cx="36" cy="54" r="5.5" fill="#343a40"/><circle cx="64" cy="54" r="5.5" fill="#343a40"/><circle cx="26" cy="66" r="6" fill="#ff6b8a" opacity="0.6"/><circle cx="74" cy="66" r="6" fill="#ff6b8a" opacity="0.6"/><path d="M40 68 Q50 75 60 68" stroke="#343a40" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
+      // 곰
+      '<svg viewBox="0 0 100 100"><circle cx="20" cy="20" r="13" fill="#c69c6d"/><circle cx="80" cy="20" r="13" fill="#c69c6d"/><circle cx="20" cy="20" r="6" fill="#a9764f"/><circle cx="80" cy="20" r="6" fill="#a9764f"/><circle cx="50" cy="56" r="36" fill="#dab48a"/><circle cx="36" cy="54" r="5.5" fill="#343a40"/><circle cx="64" cy="54" r="5.5" fill="#343a40"/><ellipse cx="50" cy="66" rx="12" ry="9" fill="#f1e1cc"/><circle cx="50" cy="64" r="3" fill="#343a40"/><path d="M42 70 Q50 75 58 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 토끼
+      '<svg viewBox="0 0 100 100"><ellipse cx="34" cy="10" rx="8" ry="22" fill="#d0bfff" transform="rotate(-18 34 10)"/><ellipse cx="66" cy="10" rx="8" ry="22" fill="#d0bfff" transform="rotate(18 66 10)"/><ellipse cx="34" cy="12" rx="4" ry="15" fill="#eee0ff" transform="rotate(-18 34 12)"/><ellipse cx="66" cy="12" rx="4" ry="15" fill="#eee0ff" transform="rotate(18 66 12)"/><circle cx="50" cy="58" r="34" fill="#e2d7ff"/><circle cx="37" cy="56" r="5" fill="#343a40"/><circle cx="63" cy="56" r="5" fill="#343a40"/><circle cx="28" cy="66" r="5" fill="#f5a6c9" opacity="0.6"/><circle cx="72" cy="66" r="5" fill="#f5a6c9" opacity="0.6"/><path d="M42 70 Q50 76 58 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 여우
+      '<svg viewBox="0 0 100 100"><path d="M16 34 L26 6 L38 30 Z" fill="#ffa94d"/><path d="M84 34 L74 6 L62 30 Z" fill="#ffa94d"/><path d="M22 28 L27 14 L33 26 Z" fill="#fff3e0"/><path d="M78 28 L73 14 L67 26 Z" fill="#fff3e0"/><circle cx="50" cy="56" r="36" fill="#ffb366"/><path d="M50 56 Q30 60 32 78 Q50 88 68 78 Q70 60 50 56 Z" fill="#fff3e0"/><circle cx="38" cy="52" r="5" fill="#343a40"/><circle cx="62" cy="52" r="5" fill="#343a40"/><path d="M46 72 L54 72 L50 78 Z" fill="#343a40"/></svg>',
+      // 병아리
+      '<svg viewBox="0 0 100 100"><path d="M40 10 Q50 2 60 10 L54 18 Q50 14 46 18 Z" fill="#ffd43b"/><circle cx="50" cy="56" r="36" fill="#ffe066"/><circle cx="38" cy="54" r="5.5" fill="#343a40"/><circle cx="62" cy="54" r="5.5" fill="#343a40"/><path d="M43 63 L57 63 L50 74 Z" fill="#ffa94d"/><circle cx="24" cy="66" r="5" fill="#ff9eb5" opacity="0.5"/><circle cx="76" cy="66" r="5" fill="#ff9eb5" opacity="0.5"/></svg>',
+      // 개구리
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="60" r="34" fill="#8ce99a"/><circle cx="32" cy="28" r="13" fill="#8ce99a"/><circle cx="68" cy="28" r="13" fill="#8ce99a"/><circle cx="32" cy="28" r="7" fill="#fff"/><circle cx="68" cy="28" r="7" fill="#fff"/><circle cx="32" cy="28" r="3" fill="#343a40"/><circle cx="68" cy="28" r="3" fill="#343a40"/><path d="M36 68 Q50 78 64 68" stroke="#343a40" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="30" cy="66" r="4" fill="#63e6be" opacity="0.6"/><circle cx="70" cy="66" r="4" fill="#63e6be" opacity="0.6"/></svg>',
+      // 펭귄
+      '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="58" rx="34" ry="38" fill="#364fc7"/><ellipse cx="50" cy="66" rx="20" ry="26" fill="#fff"/><circle cx="41" cy="52" r="5" fill="#343a40"/><circle cx="59" cy="52" r="5" fill="#343a40"/><path d="M45 60 L55 60 L50 68 Z" fill="#ffa94d"/></svg>',
+      // 돼지
+      '<svg viewBox="0 0 100 100"><path d="M22 26 L34 14 L34 34 Z" fill="#ffc9c9"/><path d="M78 26 L66 14 L66 34 Z" fill="#ffc9c9"/><circle cx="50" cy="56" r="36" fill="#ffd8d8"/><circle cx="37" cy="52" r="5" fill="#343a40"/><circle cx="63" cy="52" r="5" fill="#343a40"/><ellipse cx="50" cy="66" rx="13" ry="9" fill="#ff9eb5"/><circle cx="45" cy="66" r="2" fill="#c2255c"/><circle cx="55" cy="66" r="2" fill="#c2255c"/></svg>',
+      // 공룡
+      '<svg viewBox="0 0 100 100"><path d="M38 20 L43 4 L48 20 Z" fill="#38d9a9"/><path d="M48 18 L53 2 L58 18 Z" fill="#38d9a9"/><path d="M58 20 L63 4 L68 20 Z" fill="#38d9a9"/><circle cx="50" cy="58" r="34" fill="#63e6be"/><circle cx="37" cy="56" r="5" fill="#343a40"/><circle cx="63" cy="56" r="5" fill="#343a40"/><path d="M40 70 Q50 76 60 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 판다
+      '<svg viewBox="0 0 100 100"><circle cx="20" cy="20" r="13" fill="#343a40"/><circle cx="80" cy="20" r="13" fill="#343a40"/><circle cx="50" cy="56" r="36" fill="#f8f9fa"/><ellipse cx="36" cy="52" rx="9" ry="11" fill="#343a40"/><ellipse cx="64" cy="52" rx="9" ry="11" fill="#343a40"/><circle cx="36" cy="53" r="4" fill="#fff"/><circle cx="64" cy="53" r="4" fill="#fff"/><circle cx="36" cy="53" r="2" fill="#343a40"/><circle cx="64" cy="53" r="2" fill="#343a40"/><ellipse cx="50" cy="68" rx="6" ry="4" fill="#343a40"/></svg>',
+      // 부엉이
+      '<svg viewBox="0 0 100 100"><path d="M28 14 L38 30 L20 32 Z" fill="#a9764f"/><path d="M72 14 L62 30 L80 32 Z" fill="#a9764f"/><circle cx="50" cy="58" r="34" fill="#c69c6d"/><circle cx="36" cy="54" r="12" fill="#fff"/><circle cx="64" cy="54" r="12" fill="#fff"/><circle cx="36" cy="54" r="5" fill="#343a40"/><circle cx="64" cy="54" r="5" fill="#343a40"/><path d="M46 62 L54 62 L50 70 Z" fill="#ffa94d"/></svg>',
+      // 양
+      '<svg viewBox="0 0 100 100"><circle cx="24" cy="40" r="12" fill="#f8f9fa"/><circle cx="20" cy="54" r="12" fill="#f8f9fa"/><circle cx="30" cy="62" r="12" fill="#f8f9fa"/><circle cx="76" cy="40" r="12" fill="#f8f9fa"/><circle cx="80" cy="54" r="12" fill="#f8f9fa"/><circle cx="70" cy="62" r="12" fill="#f8f9fa"/><circle cx="50" cy="40" r="12" fill="#f8f9fa"/><circle cx="50" cy="58" r="30" fill="#495057"/><circle cx="40" cy="56" r="5" fill="#fff"/><circle cx="60" cy="56" r="5" fill="#fff"/><circle cx="40" cy="57" r="2.5" fill="#343a40"/><circle cx="60" cy="57" r="2.5" fill="#343a40"/></svg>',
+      // 코알라
+      '<svg viewBox="0 0 100 100"><circle cx="18" cy="34" r="16" fill="#adb5bd"/><circle cx="82" cy="34" r="16" fill="#adb5bd"/><circle cx="18" cy="34" r="9" fill="#495057"/><circle cx="82" cy="34" r="9" fill="#495057"/><circle cx="50" cy="58" r="34" fill="#ced4da"/><ellipse cx="50" cy="64" rx="10" ry="8" fill="#495057"/><circle cx="37" cy="54" r="5" fill="#343a40"/><circle cx="63" cy="54" r="5" fill="#343a40"/></svg>',
+      // 생쥐
+      '<svg viewBox="0 0 100 100"><circle cx="26" cy="24" r="14" fill="#ced4da"/><circle cx="74" cy="24" r="14" fill="#ced4da"/><circle cx="26" cy="24" r="7" fill="#ffc9c9"/><circle cx="74" cy="24" r="7" fill="#ffc9c9"/><circle cx="50" cy="58" r="32" fill="#e9ecef"/><circle cx="38" cy="56" r="5" fill="#343a40"/><circle cx="62" cy="56" r="5" fill="#343a40"/><circle cx="50" cy="64" r="3" fill="#ff9eb5"/><path d="M40 70 Q50 74 60 70" stroke="#343a40" stroke-width="2" fill="none" stroke-linecap="round"/></svg>'
+    ],
+    fruit: [
+      // 사과
+      '<svg viewBox="0 0 100 100"><path d="M50 22 L50 32" stroke="#5c3a21" stroke-width="3" stroke-linecap="round"/><path d="M50 26 Q60 18 66 26 Q60 30 50 28 Z" fill="#40c057"/><path d="M50 30 C28 30 20 50 24 66 C28 82 42 90 50 90 C58 90 72 82 76 66 C80 50 72 30 50 30 Z" fill="#fa5252"/><ellipse cx="40" cy="50" rx="6" ry="10" fill="#ff8787" opacity="0.6"/></svg>',
+      // 바나나
+      '<svg viewBox="0 0 100 100"><path d="M28 74 C24 56 32 30 54 20 C58 18 62 20 62 24 C62 28 58 28 56 30 C40 38 34 58 38 72 C40 80 34 84 28 74 Z" fill="#ffd43b"/><path d="M54 20 L60 14" stroke="#5c3a21" stroke-width="3" stroke-linecap="round"/><path d="M30 70 C34 74 40 76 44 74" stroke="#e0b400" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+      // 포도
+      '<svg viewBox="0 0 100 100"><path d="M50 20 L50 30" stroke="#40c057" stroke-width="3" stroke-linecap="round"/><path d="M50 22 Q58 16 64 22 Q58 26 50 24 Z" fill="#40c057"/><circle cx="40" cy="34" r="12" fill="#9775fa"/><circle cx="60" cy="34" r="12" fill="#9775fa"/><circle cx="30" cy="52" r="12" fill="#845ef7"/><circle cx="50" cy="52" r="12" fill="#9775fa"/><circle cx="70" cy="52" r="12" fill="#845ef7"/><circle cx="40" cy="70" r="12" fill="#9775fa"/><circle cx="60" cy="70" r="12" fill="#845ef7"/></svg>',
+      // 딸기
+      '<svg viewBox="0 0 100 100"><path d="M32 24 L50 34 L68 24 L58 36 L42 36 Z" fill="#40c057"/><path d="M50 34 C26 34 20 56 32 72 C40 84 60 84 68 72 C80 56 74 34 50 34 Z" fill="#fa5252"/><circle cx="40" cy="52" r="2" fill="#ffd43b"/><circle cx="58" cy="50" r="2" fill="#ffd43b"/><circle cx="48" cy="64" r="2" fill="#ffd43b"/><circle cx="62" cy="64" r="2" fill="#ffd43b"/><circle cx="36" cy="66" r="2" fill="#ffd43b"/></svg>',
+      // 수박
+      '<svg viewBox="0 0 100 100"><path d="M14 46 A36 36 0 0 1 86 46 Z" fill="#2f9e44"/><path d="M20 46 A30 30 0 0 1 80 46 Z" fill="#f8f9fa"/><path d="M26 46 A24 24 0 0 1 74 46 Z" fill="#ff6b6b"/><circle cx="42" cy="38" r="2.4" fill="#343a40"/><circle cx="58" cy="38" r="2.4" fill="#343a40"/><circle cx="50" cy="30" r="2.4" fill="#343a40"/></svg>',
+      // 오렌지
+      '<svg viewBox="0 0 100 100"><path d="M50 14 L50 24" stroke="#2f9e44" stroke-width="3" stroke-linecap="round"/><path d="M50 16 Q58 10 64 16 Q58 20 50 18 Z" fill="#40c057"/><circle cx="50" cy="58" r="36" fill="#ff922b"/><circle cx="50" cy="58" r="36" fill="none" stroke="#f76707" stroke-width="1.5" opacity="0.4"/></svg>',
+      // 복숭아
+      '<svg viewBox="0 0 100 100"><path d="M50 22 L50 30" stroke="#2f9e44" stroke-width="3" stroke-linecap="round"/><circle cx="36" cy="52" r="26" fill="#ffb3ab"/><circle cx="64" cy="52" r="26" fill="#ffc9c9"/><path d="M50 30 Q54 40 50 48 Q46 40 50 30 Z" fill="#ff8787"/></svg>',
+      // 파인애플
+      '<svg viewBox="0 0 100 100"><path d="M50 4 L56 20 L44 20 Z" fill="#40c057"/><path d="M38 6 L48 22 L36 24 Z" fill="#40c057"/><path d="M62 6 L52 22 L64 24 Z" fill="#40c057"/><path d="M32 30 C24 30 20 50 26 68 C32 84 68 84 74 68 C80 50 76 30 68 30 C60 30 56 24 50 24 C44 24 40 30 32 30 Z" fill="#ffd43b"/><path d="M34 42 L66 42 M32 54 L68 54 M36 66 L64 66" stroke="#f08c00" stroke-width="2" opacity="0.5"/></svg>',
+      // 체리
+      '<svg viewBox="0 0 100 100"><path d="M50 14 Q56 30 42 40" stroke="#40c057" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M50 14 Q46 26 58 38" stroke="#40c057" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="38" cy="62" r="22" fill="#fa5252"/><circle cx="66" cy="58" r="20" fill="#e03131"/><ellipse cx="30" cy="54" rx="5" ry="8" fill="#ff8787" opacity="0.6"/></svg>',
+      // 키위
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="36" fill="#a9764f"/><circle cx="50" cy="54" r="28" fill="#c3e88d"/><circle cx="50" cy="54" r="8" fill="#f1f3f5"/><circle cx="40" cy="46" r="2" fill="#343a40"/><circle cx="60" cy="46" r="2" fill="#343a40"/><circle cx="50" cy="66" r="2" fill="#343a40"/><circle cx="36" cy="60" r="2" fill="#343a40"/><circle cx="64" cy="60" r="2" fill="#343a40"/></svg>',
+      // 레몬
+      '<svg viewBox="0 0 100 100"><path d="M16 54 Q10 54 10 48 Q10 42 18 44 Z" fill="#ffe066"/><path d="M84 54 Q90 54 90 48 Q90 42 82 44 Z" fill="#ffe066"/><ellipse cx="50" cy="54" rx="38" ry="30" fill="#ffe066"/><ellipse cx="50" cy="54" rx="38" ry="30" fill="none" stroke="#fab005" stroke-width="1.5" opacity="0.4"/></svg>',
+      // 망고
+      '<svg viewBox="0 0 100 100"><path d="M50 20 L54 28" stroke="#5c3a21" stroke-width="3" stroke-linecap="round"/><path d="M30 34 C16 46 16 70 34 82 C48 90 68 84 76 68 C84 52 76 30 58 26 C48 24 38 26 30 34 Z" fill="#ffa94d"/><path d="M34 40 C28 50 28 64 38 74" stroke="#fa5252" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/></svg>',
+      // 멜론
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="38" fill="#94d82d"/><path d="M20 40 Q50 30 80 40 M16 54 Q50 46 84 54 M20 68 Q50 62 80 68" stroke="#5c940d" stroke-width="2" fill="none" opacity="0.5"/></svg>',
+      // 블루베리
+      '<svg viewBox="0 0 100 100"><circle cx="38" cy="40" r="16" fill="#5c7cfa"/><circle cx="64" cy="40" r="16" fill="#4263eb"/><circle cx="50" cy="66" r="18" fill="#3b5bdb"/><path d="M36 30 L34 24 L42 26 L38 30 Z" fill="#495057"/><path d="M62 30 L60 24 L68 26 L64 30 Z" fill="#495057"/><path d="M48 54 L46 48 L54 50 L50 54 Z" fill="#495057"/></svg>'
+    ],
+    flower: [
+      flowerSVG('#ff8fa3', '#ffd43b'),
+      flowerSVG('#ffd43b', '#f08c00'),
+      flowerSVG('#b197fc', '#ffd43b'),
+      flowerSVG('#74c0fc', '#ffd43b'),
+      flowerSVG('#ff6b6b', '#ffd43b'),
+      flowerSVG('#f1f3f5', '#ff8fa3'),
+      flowerSVG('#ffa94d', '#e03131'),
+      flowerSVG('#63e6be', '#f1f3f5'),
+      flowerSVG('#ff8787', '#ffd43b'),
+      flowerSVG('#d0bfff', '#f1f3f5'),
+      flowerSVG('#e64980', '#fff3bf'),
+      flowerSVG('#ffec99', '#e8590c'),
+      flowerSVG('#eebefa', '#845ef7'),
+      flowerSVG('#96f2d7', '#0ca678')
+    ],
+    shape: [
+      // 별
+      '<svg viewBox="0 0 100 100"><path d="M50 6 L61 38 L95 38 L67 58 L78 90 L50 70 L22 90 L33 58 L5 38 L39 38 Z" fill="#ffd43b"/><circle cx="42" cy="46" r="4" fill="#343a40"/><circle cx="58" cy="46" r="4" fill="#343a40"/><path d="M44 56 Q50 60 56 56" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 하트
+      '<svg viewBox="0 0 100 100"><path d="M50 88 C20 66 6 46 6 30 C6 14 20 6 32 12 C40 16 46 24 50 32 C54 24 60 16 68 12 C80 6 94 14 94 30 C94 46 80 66 50 88 Z" fill="#ff6b8a"/><circle cx="40" cy="36" r="4" fill="#343a40"/><circle cx="60" cy="36" r="4" fill="#343a40"/><path d="M42 46 Q50 50 58 46" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 동그라미
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="38" fill="#63e6be"/><circle cx="38" cy="50" r="5" fill="#343a40"/><circle cx="62" cy="50" r="5" fill="#343a40"/><path d="M40 64 Q50 70 60 64" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 세모
+      '<svg viewBox="0 0 100 100"><path d="M50 12 L92 82 L8 82 Z" fill="#ffa94d"/><circle cx="42" cy="66" r="4" fill="#343a40"/><circle cx="58" cy="66" r="4" fill="#343a40"/><path d="M44 74 Q50 78 56 74" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 마름모
+      '<svg viewBox="0 0 100 100"><path d="M50 8 L88 50 L50 92 L12 50 Z" fill="#4dabf7"/><circle cx="40" cy="48" r="4" fill="#343a40"/><circle cx="60" cy="48" r="4" fill="#343a40"/><path d="M42 58 Q50 62 58 58" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 오각형
+      '<svg viewBox="0 0 100 100"><path d="M50 6 L92 38 L76 88 L24 88 L8 38 Z" fill="#63e6be"/><circle cx="40" cy="46" r="4" fill="#343a40"/><circle cx="60" cy="46" r="4" fill="#343a40"/><path d="M42 58 Q50 62 58 58" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 육각형
+      '<svg viewBox="0 0 100 100"><path d="M32 10 L68 10 L92 50 L68 90 L32 90 L8 50 Z" fill="#748ffc"/><circle cx="42" cy="48" r="4" fill="#343a40"/><circle cx="58" cy="48" r="4" fill="#343a40"/><path d="M42 60 Q50 64 58 60" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 초승달
+      '<svg viewBox="0 0 100 100"><path d="M62 8 A42 42 0 1 0 62 92 A34 34 0 1 1 62 8 Z" fill="#ffd43b"/><circle cx="46" cy="46" r="3.5" fill="#343a40"/><path d="M42 58 Q47 62 52 58" stroke="#343a40" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+      // 구름
+      '<svg viewBox="0 0 100 100"><path d="M28 62 A16 16 0 1 1 34 31 A20 20 0 0 1 72 28 A16 16 0 1 1 76 62 Z" fill="#a5d8ff"/><circle cx="42" cy="48" r="3.5" fill="#343a40"/><circle cx="58" cy="48" r="3.5" fill="#343a40"/><path d="M44 56 Q50 60 56 56" stroke="#343a40" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+      // 타원
+      '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="54" rx="40" ry="30" fill="#ffa8a8"/><circle cx="38" cy="50" r="4" fill="#343a40"/><circle cx="62" cy="50" r="4" fill="#343a40"/><path d="M40 62 Q50 66 60 62" stroke="#343a40" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+      // 십자
+      '<svg viewBox="0 0 100 100"><path d="M36 8 H64 V36 H92 V64 H64 V92 H36 V64 H8 V36 H36 Z" fill="#ffa8a8"/><circle cx="42" cy="46" r="4" fill="#343a40"/><circle cx="58" cy="46" r="4" fill="#343a40"/><path d="M42 58 Q50 62 58 58" stroke="#343a40" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+      // 화살표
+      '<svg viewBox="0 0 100 100"><path d="M8 42 H56 V26 L92 50 L56 74 V58 H8 Z" fill="#69db7c"/><circle cx="26" cy="48" r="4" fill="#343a40"/><circle cx="40" cy="48" r="4" fill="#343a40"/><path d="M26 58 Q33 62 40 58" stroke="#343a40" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+      // 반달
+      '<svg viewBox="0 0 100 100"><path d="M10 60 A40 40 0 0 1 90 60 Z" fill="#e599f7"/><circle cx="38" cy="48" r="4" fill="#343a40"/><circle cx="62" cy="48" r="4" fill="#343a40"/><path d="M40 58 Q50 62 60 58" stroke="#343a40" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+      // 팔각형
+      '<svg viewBox="0 0 100 100"><path d="M32 8 L68 8 L92 32 L92 68 L68 92 L32 92 L8 68 L8 32 Z" fill="#ffd8a8"/><circle cx="40" cy="46" r="4" fill="#343a40"/><circle cx="60" cy="46" r="4" fill="#343a40"/><path d="M42 58 Q50 62 58 58" stroke="#343a40" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>'
+    ],
+    monster: [
+      // 불꽃 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M50 4 C46 14 40 20 40 28 C40 34 45 38 50 38 C55 38 60 34 60 28 C60 20 54 14 50 4 Z" fill="#ff6b4a"/><path d="M50 12 C48 18 45 21 45 26 C45 29 47 31 50 31 C53 31 55 29 55 26 C55 21 52 18 50 12 Z" fill="#ffd43b"/><circle cx="50" cy="58" r="34" fill="#ff9f66"/><circle cx="38" cy="56" r="5" fill="#343a40"/><circle cx="62" cy="56" r="5" fill="#343a40"/><circle cx="30" cy="66" r="4.5" fill="#ff6b4a" opacity="0.5"/><circle cx="70" cy="66" r="4.5" fill="#ff6b4a" opacity="0.5"/><path d="M42 70 Q50 76 58 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 물방울 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M10 50 Q4 58 12 66 Q18 60 20 52 Z" fill="#4dabf7"/><path d="M90 50 Q96 58 88 66 Q82 60 80 52 Z" fill="#4dabf7"/><circle cx="50" cy="58" r="34" fill="#63b6f7"/><path d="M50 30 Q60 40 50 50 Q40 40 50 30 Z" fill="#a5d8ff"/><circle cx="38" cy="58" r="5" fill="#343a40"/><circle cx="62" cy="58" r="5" fill="#343a40"/><path d="M42 72 Q50 78 58 72" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 새싹 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M50 4 C40 8 34 18 40 28 C46 34 54 34 60 28 C66 18 60 8 50 4 Z" fill="#40c057"/><path d="M50 10 L50 26" stroke="#2f9e44" stroke-width="2" stroke-linecap="round"/><circle cx="50" cy="58" r="34" fill="#69db7c"/><circle cx="38" cy="56" r="5" fill="#343a40"/><circle cx="62" cy="56" r="5" fill="#343a40"/><path d="M42 70 Q50 76 58 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 스파크 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M20 10 L34 30 L22 32 L34 52 L14 34 L24 32 Z" fill="#ffd43b"/><path d="M80 10 L66 30 L78 32 L66 52 L86 34 L76 32 Z" fill="#ffd43b"/><circle cx="50" cy="58" r="34" fill="#748ffc"/><circle cx="38" cy="56" r="5" fill="#343a40"/><circle cx="62" cy="56" r="5" fill="#343a40"/><path d="M42 70 Q50 76 58 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 바위 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M28 20 L38 8 L46 22 Z" fill="#adb5bd"/><path d="M72 20 L62 8 L54 22 Z" fill="#adb5bd"/><circle cx="50" cy="58" r="34" fill="#ced4da"/><path d="M30 46 L40 50 L32 58 Z" fill="#adb5bd" opacity="0.7"/><path d="M70 46 L60 50 L68 58 Z" fill="#adb5bd" opacity="0.7"/><circle cx="38" cy="58" r="5" fill="#343a40"/><circle cx="62" cy="58" r="5" fill="#343a40"/><path d="M42 72 Q50 77 58 72" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 서리 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M50 2 L54 16 L50 22 L46 16 Z" fill="#99e9f2"/><path d="M50 22 L60 26 L50 32 L40 26 Z" fill="#66d9e8"/><circle cx="50" cy="58" r="34" fill="#c5f6fa"/><circle cx="38" cy="56" r="5" fill="#343a40"/><circle cx="62" cy="56" r="5" fill="#343a40"/><circle cx="28" cy="66" r="4" fill="#66d9e8" opacity="0.6"/><circle cx="72" cy="66" r="4" fill="#66d9e8" opacity="0.6"/><path d="M42 70 Q50 75 58 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 텔레파시 몬스터
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="58" r="34" fill="#b197fc"/><path d="M50 40 a8 8 0 1 1 -6 3" stroke="#5f3dc4" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="38" cy="58" r="5" fill="#343a40"/><circle cx="62" cy="58" r="5" fill="#343a40"/><path d="M42 72 Q50 78 58 72" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 그림자 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M16 56 Q16 20 50 20 Q84 20 84 56 L84 78 Q78 70 72 78 Q66 70 60 78 Q54 70 48 78 Q42 70 36 78 Q30 70 24 78 Q18 70 16 78 Z" fill="#845ef7"/><circle cx="38" cy="52" r="5" fill="#f8f9fa"/><circle cx="62" cy="52" r="5" fill="#f8f9fa"/><circle cx="38" cy="52" r="2.4" fill="#343a40"/><circle cx="62" cy="52" r="2.4" fill="#343a40"/><ellipse cx="50" cy="64" rx="5" ry="6" fill="#343a40" opacity="0.7"/></svg>',
+      // 날개 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M6 46 Q22 36 30 52 Q20 58 6 46 Z" fill="#a5d8ff"/><path d="M94 46 Q78 36 70 52 Q80 58 94 46 Z" fill="#a5d8ff"/><circle cx="50" cy="58" r="34" fill="#d0ebff"/><path d="M50 24 Q56 30 50 36 Q44 30 50 24 Z" fill="#a5d8ff"/><circle cx="38" cy="58" r="5" fill="#343a40"/><circle cx="62" cy="58" r="5" fill="#343a40"/><path d="M42 72 Q50 77 58 72" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 들판 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M46 10 L50 24 L54 10 Z" fill="#0ca678"/><path d="M78 40 Q92 38 90 52 Q80 54 74 48 Z" fill="#38d9a9"/><circle cx="50" cy="58" r="34" fill="#20c997"/><circle cx="38" cy="56" r="5" fill="#343a40"/><circle cx="62" cy="56" r="5" fill="#343a40"/><path d="M42 70 Q50 76 58 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 강철 몬스터
+      '<svg viewBox="0 0 100 100"><path d="M40 6 L48 6 L48 14 L40 14 Z" fill="#adb5bd"/><path d="M52 6 L60 6 L60 14 L52 14 Z" fill="#adb5bd"/><circle cx="50" cy="58" r="34" fill="#dee2e6"/><circle cx="38" cy="56" r="5" fill="#343a40"/><circle cx="62" cy="56" r="5" fill="#343a40"/><path d="M42 70 Q50 75 58 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 독 몬스터
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="58" r="34" fill="#9c36b5"/><circle cx="30" cy="44" r="6" fill="#69db7c" opacity="0.7"/><circle cx="70" cy="70" r="7" fill="#69db7c" opacity="0.7"/><circle cx="38" cy="56" r="5" fill="#f8f9fa"/><circle cx="62" cy="56" r="5" fill="#f8f9fa"/><circle cx="38" cy="56" r="2.4" fill="#343a40"/><circle cx="62" cy="56" r="2.4" fill="#343a40"/><path d="M42 70 Q50 74 58 70" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 모래 몬스터
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="58" r="34" fill="#e9c46a"/><path d="M20 78 Q35 70 50 78 Q65 70 80 78" stroke="#d4a24e" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="38" cy="54" r="5" fill="#343a40"/><circle cx="62" cy="54" r="5" fill="#343a40"/><path d="M42 66 Q50 70 58 66" stroke="#343a40" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+      // 코스믹 몬스터
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="58" r="34" fill="#28285c"/><path d="M30 34 L32 38 L36 38 L33 41 L34 45 L30 43 L26 45 L27 41 L24 38 L28 38 Z" fill="#ffd43b"/><path d="M70 40 L71.5 43 L74.5 43 L72 45 L73 48 L70 46 L67 48 L68 45 L65.5 43 L68.5 43 Z" fill="#ffd43b"/><circle cx="38" cy="58" r="5" fill="#e7f5ff"/><circle cx="62" cy="58" r="5" fill="#e7f5ff"/><circle cx="38" cy="58" r="2.4" fill="#343a40"/><circle cx="62" cy="58" r="2.4" fill="#343a40"/><path d="M42 70 Q50 74 58 70" stroke="#e7f5ff" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>'
+    ]
+  };
+
+  // 카드 뒷면(공통) - 반짝이는 별 모양의 미스터리 카드 디자인
+  var CARD_BACK_SVG = '<svg viewBox="0 0 100 100"><rect x="3" y="3" width="94" height="94" rx="16" fill="#3da5ff"/><rect x="3" y="3" width="94" height="40" rx="16" fill="#ffffff" opacity="0.12"/><circle cx="18" cy="20" r="2.6" fill="#ffffff" opacity="0.55"/><circle cx="84" cy="16" r="2" fill="#ffffff" opacity="0.5"/><circle cx="80" cy="82" r="2.6" fill="#ffffff" opacity="0.45"/><circle cx="16" cy="80" r="2" fill="#ffffff" opacity="0.4"/><path d="M50 26 L56 44 L74 50 L56 56 L50 74 L44 56 L26 50 L44 44 Z" fill="#ffffff"/><path d="M50 37 L53.5 46.5 L63 50 L53.5 53.5 L50 63 L46.5 53.5 L37 50 L46.5 46.5 Z" fill="#3da5ff"/></svg>';
+
+  var HOWTO_SOLO = '모든 짝을 맞추면 게임이 끝나요!';
+  var HOWTO_VERSUS = '순서를 번갈아가며 카드를 뒤집고, 짝을 맞추면 한 번 더! 틀리면 상대 차례로 넘어가요. 더 많은 짝을 맞춘 사람이 승리!';
+
+  var state = {
+    mode: null,          // 'solo' | 'versus'
+    difficulty: 'easy',
+    currentTheme: null,    // 이번 판에 고른 테마 키 (THEMES의 key)
+    currentCharacters: [], // 이번 판에 쓰는 그림 목록 (THEMES[currentTheme]) - 한 판 안에서는 테마를 섞지 않음
+    cards: [],            // { charId, matched, flipped }
+    flippedIdx: [],        // 현재 뒤집혀 있는(아직 판정 전) 카드 인덱스
+    moves: 0,
+    matchedPairs: 0,
+    totalPairs: 0,
+    lockBoard: false,
+    startTime: null,
+    timerId: null,
+    currentPlayer: 1,      // versus 전용
+    scores: { p1:0, p2:0 } // versus 전용
+  };
+
+  /* ---------- 엘리먼트 캐시 ---------- */
+  var el = {
+    screenMenu: document.getElementById('screen-menu'),
+    screenPlay: document.getElementById('screen-play'),
+    screenResult: document.getElementById('screen-result'),
+    btnModeSolo: document.getElementById('btn-mode-solo'),
+    btnModeVersus: document.getElementById('btn-mode-versus'),
+    howtoMode: document.getElementById('howto-mode'),
+    diffOptions: document.querySelectorAll('#diff-options .diff-option'),
+    btnStart: document.getElementById('btn-start'),
+    board: document.getElementById('board'),
+    scoreboardSolo: document.getElementById('scoreboard-solo'),
+    scoreboardVersus: document.getElementById('scoreboard-versus'),
+    statMoves: document.getElementById('stat-moves'),
+    statTime: document.getElementById('stat-time'),
+    statPairs: document.getElementById('stat-pairs'),
+    statPairsVersus: document.getElementById('stat-pairs-versus'),
+    scoreP1: document.getElementById('score-p1'),
+    scoreP2: document.getElementById('score-p2'),
+    scoreItemP1: document.getElementById('score-item-p1'),
+    scoreItemP2: document.getElementById('score-item-p2'),
+    btnGiveUp: document.getElementById('btn-give-up'),
+    resultEmoji: document.getElementById('result-emoji'),
+    resultText: document.getElementById('result-text'),
+    resultStats: document.getElementById('result-stats'),
+    resultCards: document.getElementById('result-cards'),
+    rpcP1: document.getElementById('rpc-p1'),
+    rpcP2: document.getElementById('rpc-p2'),
+    resultBtns: document.getElementById('result-btns'),
+    endedMsg: document.getElementById('ended-msg'),
+    btnReplay: document.getElementById('btn-replay'),
+    btnBackMenu: document.getElementById('btn-back-menu'),
+    btnQuit: document.getElementById('btn-quit'),
+    btnNewGame: document.getElementById('btn-new-game')
+  };
+
+  /* ---------- 화면 전환 ---------- */
+  function showScreen(name){
+    el.screenMenu.classList.toggle('hidden', name !== 'menu');
+    el.screenPlay.classList.toggle('hidden', name !== 'play');
+    el.screenResult.classList.toggle('hidden', name !== 'result');
+  }
+
+  /* ---------- 모드/난이도 선택 화면 로직 ---------- */
+  function selectMode(mode){
+    state.mode = mode;
+    el.btnModeSolo.classList.toggle('dimmed', mode !== 'solo');
+    el.btnModeVersus.classList.toggle('dimmed', mode !== 'versus');
+    el.howtoMode.textContent = mode === 'versus' ? HOWTO_VERSUS : HOWTO_SOLO;
+    updateStartButton();
+  }
+
+  function selectDifficulty(diff){
+    state.difficulty = diff;
+    el.diffOptions.forEach(function(opt){
+      opt.classList.toggle('selected', opt.getAttribute('data-diff') === diff);
+    });
+  }
+
+  // 모드를 선택해야 시작 버튼이 활성화됨 (틱택토와 동일한 시작 흐름)
+  function updateStartButton(){
+    var ready = state.mode !== null;
+    el.btnStart.disabled = !ready;
+    el.btnStart.textContent = ready ? '게임 시작' : '모드를 선택하세요';
+  }
+
+  el.btnModeSolo.addEventListener('click', function(){ selectMode('solo'); });
+  el.btnModeVersus.addEventListener('click', function(){ selectMode('versus'); });
+  el.diffOptions.forEach(function(opt){
+    opt.addEventListener('click', function(){ selectDifficulty(opt.getAttribute('data-diff')); });
+  });
+  el.btnStart.addEventListener('click', startGame);
+
+  /* ---------- 카드 섞기 ---------- */
+  function shuffle(arr){
+    for(var i=arr.length-1;i>0;i--){
+      var j = Math.floor(Math.random() * (i+1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  function buildShuffledCards(pairs){
+    var pool = shuffle(state.currentCharacters.map(function(_, i){ return i; }));
+    var chosen = pool.slice(0, pairs);
+    var deck = chosen.concat(chosen).map(function(charId){
+      return { charId:charId, matched:false, flipped:false, matchedBy:null };
+    });
+    return shuffle(deck);
+  }
+
+  /* ---------- 보드 열 수 계산 ---------- */
+  // 카드 크기는 항상 고정(CSS의 96px과 동일)이며 화면 폭에 따라 줄어들지 않음.
+  // 화면에 고정 크기 카드가 몇 열까지 들어가는지 계산한 뒤, 전체 카드 수(항상 짝수)의
+  // 약수 중 그 열 수 이하인 것 중 가장 큰 값을 선택 -> 마지막 줄에 카드가 남지 않으면서도
+  // 카드 크기는 절대 변하지 않고, 한 줄에 너무 많은 카드가 몰리지도 않음
+  var CARD_SIZE_PX = 96; // .board의 grid-template-columns 값(96px)과 반드시 일치시킬 것
+  var BOARD_GAP_PX = 8;
+  var MAX_COLS_CAP = 7; // 화면이 아무리 넓어도 한 줄에 이보다 많은 카드를 두지 않음
+
+  function divisorsOf(n){
+    var divs = [];
+    for(var d=1; d<=n; d++){ if(n % d === 0) divs.push(d); }
+    return divs;
+  }
+
+  function computeBoardColumns(totalCards){
+    var containerWidth = el.board.clientWidth;
+    var maxColsFit = containerWidth
+      ? Math.max(1, Math.floor((containerWidth + BOARD_GAP_PX) / (CARD_SIZE_PX + BOARD_GAP_PX)))
+      : 4;
+    maxColsFit = Math.min(maxColsFit, MAX_COLS_CAP);
+
+    var best = 1;
+    divisorsOf(totalCards).forEach(function(d){
+      if(d <= maxColsFit && d > best) best = d;
+    });
+    return best;
+  }
+
+  function applyBoardColumns(){
+    if(!state.totalPairs) return;
+    el.board.style.setProperty('--cols', computeBoardColumns(state.totalPairs * 2));
+  }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function(){
+    if(el.screenPlay.classList.contains('hidden')) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(applyBoardColumns, 120);
+  });
+
+  /* ---------- 게임 시작/리셋 ---------- */
+  function startGame(){
+    resetRound();
+    showScreen('play');
+    applyBoardColumns();
+  }
+
+  function resetRound(){
+    var cfg = DIFF_CONFIG[state.difficulty];
+
+    // 한 판 안에서는 테마가 섞이지 않도록, 판마다 테마를 하나 골라 그 테마의 그림만 사용
+    var themeKeys = Object.keys(THEMES);
+    state.currentTheme = themeKeys[Math.floor(Math.random() * themeKeys.length)];
+    state.currentCharacters = THEMES[state.currentTheme];
+
+    state.cards = buildShuffledCards(cfg.pairs);
+    state.flippedIdx = [];
+    state.moves = 0;
+    state.matchedPairs = 0;
+    state.totalPairs = cfg.pairs;
+    state.lockBoard = false;
+    state.currentPlayer = 1;
+    state.scores = { p1:0, p2:0 };
+    state.startTime = Date.now();
+
+    el.scoreboardSolo.classList.toggle('hidden', state.mode !== 'solo');
+    el.scoreboardVersus.classList.toggle('hidden', state.mode === 'solo');
+
+    renderBoard();
+    updateStats();
+    updateTurnIndicator();
+
+    if(state.mode === 'solo') startTimer(); else stopTimer();
+  }
+
+  function backToMenu(){
+    stopTimer();
+    state.mode = null;
+    el.btnModeSolo.classList.remove('dimmed');
+    el.btnModeVersus.classList.remove('dimmed');
+    updateStartButton();
+    showScreen('menu');
+  }
+
+  el.btnGiveUp.addEventListener('click', backToMenu);
+
+  /* ---------- 타이머 (1인 모드 전용) ---------- */
+  function startTimer(){
+    stopTimer();
+    updateTimeDisplay();
+    state.timerId = setInterval(updateTimeDisplay, 1000);
+  }
+  function stopTimer(){
+    if(state.timerId){ clearInterval(state.timerId); state.timerId = null; }
+  }
+  function updateTimeDisplay(){
+    var elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    var mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    var ss = String(elapsed % 60).padStart(2, '0');
+    el.statTime.textContent = mm + ':' + ss;
+  }
+
+  /* ---------- 보드 렌더링 ---------- */
+  function renderBoard(){
+    el.board.innerHTML = '';
+    state.cards.forEach(function(cardData, idx){
+      var cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'cell' + (cardData.flipped ? ' flipped' : '') + (cardData.matched ? ' matched' : '');
+      cell.setAttribute('data-idx', idx);
+      cell.setAttribute('aria-label', (idx + 1) + '번째 카드' + (cardData.matched ? ' (맞춤)' : ''));
+      if(cardData.matched) cell.disabled = true;
+
+      var inner = document.createElement('div');
+      inner.className = 'cell-inner';
+
+      var back = document.createElement('div');
+      back.className = 'cell-face cell-back';
+      back.innerHTML = CARD_BACK_SVG;
+
+      var front = document.createElement('div');
+      front.className = 'cell-face cell-front';
+      front.innerHTML = state.currentCharacters[cardData.charId];
+
+      inner.appendChild(back);
+      inner.appendChild(front);
+      cell.appendChild(inner);
+
+      cell.addEventListener('click', function(){ handleCardInput(idx); });
+      cell.addEventListener('touchstart', function(e){
+        e.preventDefault();
+        handleCardInput(idx);
+      }, { passive:false });
+
+      el.board.appendChild(cell);
+    });
+  }
+
+  function updateStats(){
+    el.statMoves.textContent = state.moves;
+    el.statPairs.textContent = state.matchedPairs + '/' + state.totalPairs;
+    el.statPairsVersus.textContent = state.matchedPairs + '/' + state.totalPairs;
+    el.scoreP1.textContent = state.scores.p1;
+    el.scoreP2.textContent = state.scores.p2;
+  }
+
+  // 별도 안내 문구 없이, 현재 차례인 플레이어의 점수판 칸을 강조 표시하는 것만으로 차례를 나타냄
+  function updateTurnIndicator(){
+    if(state.mode !== 'versus') return;
+    el.scoreItemP1.classList.toggle('active', state.currentPlayer === 1);
+    el.scoreItemP2.classList.toggle('active', state.currentPlayer === 2);
+  }
+
+  /* ---------- 입력 처리 ---------- */
+  function handleCardInput(idx){
+    if(state.lockBoard) return;
+    var cardData = state.cards[idx];
+    if(cardData.matched || cardData.flipped) return;
+    if(state.flippedIdx.indexOf(idx) !== -1) return;
+
+    cardData.flipped = true;
+    state.flippedIdx.push(idx);
+    updateCardEl(idx);
+
+    if(state.flippedIdx.length === 2){
+      state.moves++;
+      updateStats();
+      state.lockBoard = true;
+      setTimeout(evaluatePair, 700);
+    }
+  }
+
+  function updateCardEl(idx){
+    var cell = el.board.children[idx];
+    if(!cell) return;
+    var cardData = state.cards[idx];
+    cell.classList.toggle('flipped', cardData.flipped);
+    cell.classList.toggle('matched', cardData.matched);
+    cell.disabled = cardData.matched;
+  }
+
+  function evaluatePair(){
+    var idxA = state.flippedIdx[0];
+    var idxB = state.flippedIdx[1];
+    var cardA = state.cards[idxA];
+    var cardB = state.cards[idxB];
+    var isMatch = cardA.charId === cardB.charId;
+
+    if(isMatch){
+      cardA.matched = true;
+      cardB.matched = true;
+      state.matchedPairs++;
+      if(state.mode === 'versus'){
+        cardA.matchedBy = state.currentPlayer;
+        cardB.matchedBy = state.currentPlayer;
+        state.scores['p' + state.currentPlayer]++;
+      }
+    } else {
+      cardA.flipped = false;
+      cardB.flipped = false;
+      if(state.mode === 'versus'){
+        state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+      }
+    }
+    updateCardEl(idxA);
+    updateCardEl(idxB);
+    state.flippedIdx = [];
+    state.lockBoard = false;
+    updateStats();
+    updateTurnIndicator();
+
+    if(state.matchedPairs === state.totalPairs) finishRound();
+  }
+
+  /* ---------- 결과 화면 ---------- */
+  // 2인 대전 결과 화면에서 각 플레이어가 맞춘 카드를 작은 그리드로 보여줌
+  function renderResultCards(container, player){
+    container.innerHTML = '';
+    var matched = state.cards
+      .filter(function(c){ return c.matchedBy === player; })
+      .sort(function(a, b){ return a.charId - b.charId; });
+    if(matched.length === 0){
+      container.innerHTML = '<div class="rpc-empty">맞춘 카드 없음</div>';
+      return;
+    }
+    matched.forEach(function(c){
+      var item = document.createElement('div');
+      item.className = 'rpc-item';
+      item.innerHTML = state.currentCharacters[c.charId];
+      container.appendChild(item);
+    });
+  }
+
+  function finishRound(){
+    stopTimer();
+
+    el.resultBtns.classList.remove('hidden');
+    el.endedMsg.classList.add('hidden');
+
+    if(state.mode === 'versus'){
+      if(state.scores.p1 === state.scores.p2){
+        el.resultEmoji.textContent = '🤝';
+        el.resultText.textContent = '무승부입니다';
+      } else {
+        var winner = state.scores.p1 > state.scores.p2 ? 1 : 2;
+        el.resultEmoji.textContent = '🎉';
+        el.resultText.textContent = 'Player ' + winner + ' 승리!';
+      }
+      el.resultStats.textContent = 'Player 1 ' + state.scores.p1 + '쌍 · Player 2 ' + state.scores.p2 + '쌍';
+      el.resultCards.classList.remove('hidden');
+      renderResultCards(el.rpcP1, 1);
+      renderResultCards(el.rpcP2, 2);
+    } else {
+      el.resultCards.classList.add('hidden');
+      var elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+      var mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      var ss = String(elapsed % 60).padStart(2, '0');
+      el.resultEmoji.textContent = '🎉';
+      el.resultText.textContent = '모든 짝을 맞췄습니다!';
+      el.resultStats.textContent = '시도 ' + state.moves + '번 · ' + mm + ':' + ss + ' 소요';
+    }
+
+    setTimeout(function(){ showScreen('result'); }, 500);
+  }
+
+  el.btnReplay.addEventListener('click', function(){
+    resetRound();
+    showScreen('play');
+    applyBoardColumns();
+  });
+  el.btnBackMenu.addEventListener('click', backToMenu);
+
+  // 그만하기: 페이지 이동 없이 결과 화면에 머무르며 종료 메시지만 표시
+  el.btnQuit.addEventListener('click', function(){
+    el.resultBtns.classList.add('hidden');
+    el.endedMsg.classList.remove('hidden');
+  });
+
+  // 종료 메시지 화면에서도 막다른 길이 되지 않도록 모드 선택으로 돌아가는 경로를 남겨둠
+  el.btnNewGame.addEventListener('click', backToMenu);
+
+  /* ---------- 초기 화면 ---------- */
+  showScreen('menu');
+
+})();
+</script>
+</body>
+</html>

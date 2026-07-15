@@ -3,6 +3,8 @@
 티스토리 블로그에 iframe으로 임베드하기 위한 웹게임 모음입니다.
 각 게임은 외부 리소스/CDN 없이 `index.html` 파일 하나로 완성되어 있으며, GitHub Pages로 배포합니다.
 
+저장소 루트의 [`index.html`](index.html)은 전체 게임을 카드 형태로 모아 보여주는 포털(홈) 페이지입니다.
+
 ## 폴더 구조
 
 ```
@@ -16,14 +18,17 @@ games/
 | 게임 | 경로 | 설명 |
 |---|---|---|
 | 틱택토 대전 | [`games/tictactoe`](games/tictactoe) | 1인 AI 대전(쉬움/보통/무적) + 로컬 2인 대전 |
+| 기억력 카드 매칭 | [`games/memorymatch`](games/memorymatch) | 카드를 뒤집어 짝을 맞추는 메모리 게임 (1인 기록 도전 / 로컬 2인 대전, 난이도별 6/8/10쌍) |
+| 비행 슈팅 | [`games/shooting`](games/shooting) | 탱크·전투기·드론·거대 비행선이 등장하는 5스테이지 세로 슈팅. 아이템 무기 강화, 1인/2인 협동(터치·마우스 드래그 + 키보드 지원) |
 
 ## GitHub Pages 배포
 
 Settings → Pages → Source: `Deploy from a branch` → Branch: `main` / `/(root)`
 
-배포 후 게임 URL 형식:
+배포 후 URL 형식:
 ```
-https://euiheonjeong.github.io/blog_games/games/<게임이름>/
+포털(전체 목록): https://euiheonjeong.github.io/blog_games/
+개별 게임:      https://euiheonjeong.github.io/blog_games/games/<게임이름>/
 ```
 
 ## 티스토리 삽입 방법
@@ -41,7 +46,8 @@ https://euiheonjeong.github.io/blog_games/games/<게임이름>/
 ```bash
 mkdir -p games/<게임이름>
 # games/<게임이름>/index.html 작성
-git add games/<게임이름>/index.html
+# 루트 index.html의 게임 목록 카드에도 추가
+git add games/<게임이름>/index.html index.html
 git commit -m "Add <게임이름> game"
 git push
 ```

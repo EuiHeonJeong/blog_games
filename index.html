@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>블로그 게임 모음</title>
+<style>
+  :root{
+    --pink:#ff6b57;
+    --pink-dark:#e14f32;
+    --blue:#3da5ff;
+    --blue-dark:#1c86e0;
+    --purple:#2bc48a;
+    --purple-dark:#1e9c6c;
+    --bg:#fff6e9;
+    --card:#ffffff;
+    --text:#23272f;
+    --sub:#868e96;
+    --line:#e9ecef;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0; width:100%; min-height:100%;
+    background:var(--bg);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    color:var(--text);
+    -webkit-text-size-adjust:100%;
+  }
+  #app{
+    max-width:820px;
+    margin:0 auto;
+    padding:20px 16px 40px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  header{ text-align:center; padding:10px 4px 4px; }
+  header h1{ margin:0 0 6px; font-size:1.8rem; color:var(--pink-dark); }
+  header p{ margin:0; font-size:0.95rem; color:var(--sub); word-break:keep-all; }
+
+  .ad-slot{
+    width:100%;
+    min-height:50px;
+    border:2px dashed #ced4da;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.75rem;
+    color:#adb5bd;
+    background:#ffffff;
+  }
+
+  .game-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:14px;
+  }
+
+  .game-card{
+    display:flex;
+    flex-direction:column;
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:16px;
+    padding:20px;
+    text-decoration:none;
+    color:var(--text);
+    box-shadow:0 4px 0 var(--line);
+    transition:transform .08s ease, box-shadow .08s ease, border-color .15s ease;
+  }
+  .game-card:active{ transform:translateY(4px); box-shadow:0 0 0 var(--line); }
+  .game-card:hover{ border-color:var(--pink); }
+
+  .game-icon{ font-size:2.4rem; margin-bottom:10px; }
+  .game-info h2{ margin:0 0 6px; font-size:1.15rem; }
+  .game-info p{ margin:0 0 14px; font-size:0.85rem; color:var(--sub); line-height:1.5; word-break:keep-all; }
+
+  .game-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .game-tag{
+    font-size:0.72rem;
+    padding:3px 9px;
+    border-radius:999px;
+    background:#fff1ee;
+    color:var(--pink-dark);
+    font-weight:bold;
+  }
+  .game-tag.blue{ background:#eaf4ff; color:var(--blue-dark); }
+  .game-tag.green{ background:#e6fbf3; color:var(--purple-dark); }
+
+  .play-btn{
+    margin-top:auto;
+    text-align:center;
+    padding:10px;
+    border-radius:10px;
+    font-size:0.9rem;
+    font-weight:bold;
+    color:#fff;
+    background:var(--pink);
+    box-shadow:0 3px 0 var(--pink-dark);
+  }
+
+  .game-card.disabled{
+    opacity:0.55;
+    cursor:default;
+    box-shadow:none;
+  }
+  .game-card.disabled:active{ transform:none; }
+  .game-card.disabled .play-btn{
+    background:#adb5bd;
+    box-shadow:0 3px 0 #868e96;
+  }
+
+  footer{ text-align:center; font-size:0.78rem; color:var(--sub); padding:8px 4px; }
+  footer a{ color:var(--sub); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>🎮 블로그 게임 모음</h1>
+    <p>티스토리 블로그에 iframe으로 바로 임베드할 수 있는 미니 웹게임 모음입니다.<br>원하는 게임을 눌러 바로 즐겨보세요!</p>
+  </header>
+
+  <div class="ad-slot" id="ad-slot-top">여기에 광고 영역</div>
+
+  <div class="game-grid">
+
+    <a class="game-card" href="games/tictactoe/index.html">
+      <div class="game-icon">⭕❌</div>
+      <div class="game-info">
+        <h2>틱택토 대전</h2>
+        <p>AI와 대결하거나 친구와 한 기기로 번갈아 즐기는 틱택토. 보드 크기와 난이도를 골라 플레이하세요.</p>
+        <div class="game-tags">
+          <span class="game-tag">1인 AI 대전</span>
+          <span class="game-tag blue">로컬 2인 대전</span>
+        </div>
+      </div>
+      <div class="play-btn">플레이하기</div>
+    </a>
+
+    <a class="game-card" href="games/memorymatch/index.html">
+      <div class="game-icon">🃏</div>
+      <div class="game-info">
+        <h2>기억력 카드 매칭</h2>
+        <p>카드를 뒤집어 짝을 맞추는 메모리 게임. 매판 다른 테마의 카드로 등장해요.</p>
+        <div class="game-tags">
+          <span class="game-tag">1인 기록 도전</span>
+          <span class="game-tag blue">로컬 2인 대전</span>
+        </div>
+      </div>
+      <div class="play-btn">플레이하기</div>
+    </a>
+
+    <a class="game-card" href="games/shooting/index.html">
+      <div class="game-icon">✈️</div>
+      <div class="game-info">
+        <h2>비행 슈팅</h2>
+        <p>탱크·전투기·드론·거대 비행선이 등장하는 5스테이지 세로 슈팅. 아이템으로 무기를 강화하세요.</p>
+        <div class="game-tags">
+          <span class="game-tag">1인 플레이</span>
+          <span class="game-tag blue">2인 협동</span>
+        </div>
+      </div>
+      <div class="play-btn">플레이하기</div>
+    </a>
+
+  </div>
+
+  <div class="ad-slot" id="ad-slot-bottom">여기에 광고 영역</div>
+
+  <footer>© 블로그 게임 모음 · 각 게임 페이지의 URL을 블로그에 iframe으로 삽입해 사용하세요</footer>
+
+</div>
+</body>
+</html>
